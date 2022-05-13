@@ -39,8 +39,7 @@ class Input:
 			if is_wait:
 				while True:
 					try:
-						c = sys.stdin.read(1)
-						if c:
+						if c := sys.stdin.read(1):
 							return self.string_key(c)
 					except IOError: pass
 			else:

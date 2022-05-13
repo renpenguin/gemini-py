@@ -8,7 +8,9 @@ TERRAIN_WIDTH = len(CUSTOM_TERRAIN) if CUSTOM_TERRAIN else 30
 scene = Scene((TERRAIN_WIDTH+1,6), is_main_scene=True, clear_char=" ")
 
 walls = []
-wall_heights = CUSTOM_TERRAIN if CUSTOM_TERRAIN else [random.randint(1,5) for _ in range(1,TERRAIN_WIDTH)]
+wall_heights = CUSTOM_TERRAIN or [
+    random.randint(1, 5) for _ in range(1, TERRAIN_WIDTH)
+]
 
 for i,wall_height in enumerate(wall_heights):
 	wall = Entity((i+1,6-wall_height), (1,wall_height), layer=1)
