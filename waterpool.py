@@ -1,12 +1,11 @@
 import random, json
 from gemini import Scene, Sprite, Entity, sleep, Input
 
-IS_WAIT = False
+IS_WAIT = True
 CUSTOM_TERRAIN = []
-TERRAIN_WIDTH = len(CUSTOM_TERRAIN) if CUSTOM_TERRAIN else 20
+TERRAIN_WIDTH = len(CUSTOM_TERRAIN) if CUSTOM_TERRAIN else 30
 
 scene = Scene((TERRAIN_WIDTH+1,6), is_main_scene=True, clear_char=" ")
-scene.use_seperator = False
 
 walls = []
 wall_heights = CUSTOM_TERRAIN or [
@@ -38,7 +37,6 @@ i = 0
 times_since_placed = 0
 while True:
 	i += 1
-	print(i)
 	water = Sprite((i%TERRAIN_WIDTH,0), image="░", collisions=True)
 	water_count += 1
 	been_to = []

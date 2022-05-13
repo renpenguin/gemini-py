@@ -17,9 +17,10 @@ class Input:
 		self.pressed_key = self.get_key_press(False)
 
 	def string_key(self, c: str | None) -> str:
-		key = repr(c)[1:-1] if c else None
-		if key == "\\x1b" and self.wait_for_key_press() == "[":
-			key = f"{self.keys[self.wait_for_key_press()]}_arrow"
+		key = str(repr(c))[1:-1] if c else None
+		if key == "\\x1b":
+			if self.get_key_press() == "[":
+				key = f"{self.keys[self.get_key_press()]}_arrow"
 		return key
 
 	def get_key_press(self, is_wait=True) -> str:
@@ -49,6 +50,3 @@ class Input:
 		finally:
 			termios.tcsetattr(fd, termios.TCSAFLUSH, oldterm)
 			fcntl.fcntl(fd, fcntl.F_SETFL, oldflags)
-
-def __init__():
-	return Input()
