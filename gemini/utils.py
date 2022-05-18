@@ -1,4 +1,4 @@
-import sys, time
+import sys, time, math
 
 def printd(*texts: str, delay=0.01, skip_delay_characters=[" "]):
 	"""Delayed print function. A simple print function that can be used in place of the usual print to have your text print out character by character, like in text adventure games!"""
@@ -9,7 +9,7 @@ def printd(*texts: str, delay=0.01, skip_delay_characters=[" "]):
 			time.sleep(delay)
 	print()
 
-def correct_position(pos: tuple, limits: tuple=None):
+def correct_position(pos: tuple[int,int], limits: tuple[int,int]=None):
 	if not limits:
 		limits = main_scene.size
 

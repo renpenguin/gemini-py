@@ -8,4 +8,5 @@ while True:
 	for direction in [(1,0),(0,1),(-1,0),(0,-1)]:
 		for _ in range(4):
 			bob.move(direction[0],direction[1])
+			scene.render()
 			sleep(.1)

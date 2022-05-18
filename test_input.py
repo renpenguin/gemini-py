@@ -1,5 +1,6 @@
-from gemini import Input
+from gemini import Input, InputNEW, sleep
 
-user_input = Input()
+user_input = InputNEW()
+print(user_input.pressed_key*10)
 
-print(user_input.get_key_press()*10)
+sleep(2)

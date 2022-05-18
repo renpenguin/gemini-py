@@ -1,17 +1,42 @@
-import sys, os
+import sys, os, curses
+
+canvas = None
+
+def end_canvas():
+	"""You MUST run this function before your program ends"""
+	curses.nocbreak()
+	canvas.keypad(False)
+	curses.echo()
+	curses.endwin()
+
+class InputNew:
+	"""## Input
+	The input class is used to collect inputs from the user. To wait for a key press before continuing use `Input().wait_for_key_press()`
+	>>> from gemini import Input
+	>>> if Input().get_key_press() == "g":
+	>>> 	print("You pressed the right key!")
+	"""
+
+	def __init__(self):
+		global canvas
+		if not canvas:
+			canvas = curses.initscr()
+		self.pressed_key = self.get_key_press()
+
+	def get_key_press(self) -> str:
+		return chr(canvas.getch())
+
+	def end(self):
+		end_canvas()
+		return self.pressed_key
 
 class Input:
-	"""## Input
+	"""## Input (old)
 	The input class is used to collect inputs from the user. To wait for a key press before continuing use `Input().wait_for_key_press()`
 	>>> from gemini import Inout
 	>>> if Input().wait_for_key_press() == "g":
 	>>> 	print("You pressed the right key!") """
-	keys = {
-		"A": "up",
-		"B": "down",
-		"C": "right",
-		"D": "left"
-	}
+	keys = {"A": "up","B": "down","C": "right","D": "left"}
 
 	def __init__(self):
 		self.pressed_key = self.get_key_press(False)

@@ -1,7 +1,7 @@
 import os
 from time import sleep
 from .utils import correct_position, main_scene, txtcolours, printd
-from .input import Input
+from .input import Input, InputNew
 
 # main engine file
 
@@ -19,12 +19,13 @@ class Entity:
 	>>> new_scene = Scene((30,15), is_main_scene=True)
 	>>> new_entity = Entity((5,4), (2,1))
 	"""
+
 	@property
 	def parent(self):
 		return self._parent
 	@parent.setter
 	def parent(self, value: 'Scene'):
-		if value is None:
+		if self._parent != value or value is None:
 			self._parent.children.remove(self)
 		self._parent = value
 
@@ -35,8 +36,23 @@ class Entity:
 	def fill_char(self, value: str):
 		self._fill_char = value
 
-	def __init__(self, pos: tuple, size: tuple, parent: 'Scene'=None, auto_render=False, layer=0, fill_char="█", colour="", collisions: list|bool=[], hidden=False):
-		self.pos, self.size = pos, size
+	@property
+	def pos(self):
+		return list(self._pos)
+	@pos.setter
+	def pos(self, value: tuple[int,int]|list[int,int]):
+		if len(value) != 2:
+			raise ValueError("Value should be a tuple of (x,y)")
+		if self.parent:
+			self._pos = list(correct_position(value, self.parent.size))
+		else:
+			self._pos = list(value)
+
+	def __init__(self, pos: tuple[int,int], size: tuple[int,int], parent: 'Scene'=None, auto_render=False, layer=0, fill_char="█", colour="", collisions: list[int]|bool=[], hidden=False):
+		self._parent = None
+		self._pos = [0,0]
+		self.pos = pos
+		self.size = size
 		self._fill_char = fill_char
 		self.colour = colour
 		self.auto_render = auto_render
@@ -67,9 +83,9 @@ class Entity:
 		y = y if type(x) == int else x[1]
 		x = x if type(x) == int else x[0]
 
-		self.hide()
-
 		if collide:
+			prev_hidden = self.hidden
+			self.hide()
 			for _ in range(abs(x)):
 				colliding = False
 				for wall_y in range(self.size[1]):
@@ -78,7 +94,7 @@ class Entity:
 				if colliding:
 					break
 				else:
-					self.move(1 if x > 0 else -1, 0, collide=False, render=False)
+					self.pos = ( self.pos[0] + (1 if x > 0 else -1), self.pos[1] )
 			for _ in range(abs(y)):
 				colliding = False
 				for wall_x in range(self.size[0]):
@@ -87,11 +103,11 @@ class Entity:
 				if colliding:
 					break
 				else:
-					self.move(0,1 if y > 0 else -1, collide=False, render=False)
+					self.pos = (self.pos[0], self.pos[1] + (1 if y > 0 else -1) )
+			if not prev_hidden:
+				self.show()
 		else:
-			self.pos = tuple(correct_position((self.pos[0] + x, self.pos[1] + y), self.parent.size))
-
-		self.show()
+			self.pos = (self.pos[0] + x, self.pos[1] + y)
 
 		if render:
 			self.parent.render()
@@ -150,6 +166,38 @@ class Sprite(Entity):
 		"""Make the sprite hidden"""
 		self.hidden = True
 
+class AnimatedSprite(Sprite):
+	"""## AnimatedSprite
+	The AnimatedSpite object works the same way as the regular Sprite, but accepts a list of images instead of only one, and can be set which to show with the `current_frame` value"""
+
+	@property
+	def current_frame(self, image=False):
+		"""Returns the index of the current frame, to get a picture of the actual frame use self.image.
+
+		When setting the current_frame, the index will always autocorrect itself to be within the fram list's range"""
+		return self._current_frame
+	@current_frame.setter
+	def current_frame(self, value: int):
+		self._current_frame = value
+		if value < 0:
+			self._current_frame = len(self.frames)-1
+		elif value > len(self.frames)-1:
+			self._current_frame = 0
+		self.image = self.frames[self._current_frame]
+
+	@property
+	def max_frame(self):
+		"""returns the largest possible frame"""
+		return len(self.frames)-1
+	def __init__(self, pos: tuple, frames: list, transparent: bool = True, parent: 'Scene' = None, auto_render=False, layer=0, colour: str = "", collisions: list = [], hidden=False, extra_characters: list = []):
+		self.frames = frames
+		self._current_frame = 0
+		self.current_frame
+		super().__init__(pos, frames[0], transparent, parent, auto_render, layer, colour, collisions, hidden, extra_characters)
+
+	def next_frame(self):
+		self.current_frame += 1
+
 class Scene:
 	"""## Scene
 	You can attach entities to this scene and render the scene to display them. There can be more than one scene that can be rendered one after the other. Create a scene like so:
@@ -161,14 +209,17 @@ class Scene:
 	Using is_main_scene=True is the same as
 	>>> from gemini import Scene, set_main_scene
 	>>> new_scene = Scene((10,10))
-	>>> set_main_scene(new_scene)"""
+	>>> set_main_scene(new_scene)
+
+	The `render_functions` parameter is to be a list of functions to run before any render, except when the `run_functions` parameter is set to False"""
 	use_seperator = True
 
-	def __init__(self, size: tuple, clear_char="░", bg_colour="", is_main_scene=False):
+	def __init__(self, size: tuple, clear_char="░", bg_colour="", render_functions: list=[], is_main_scene=False):
 		self.size = size
 		self.clear_char = clear_char
 		self.bg_colour = bg_colour
-		self.children: list[Entity] = []
+		self.children: list[Entity|Sprite] = []
+		self.render_functions: list[function] = render_functions
 
 		if is_main_scene:
 			main_scene.main_scene = self
@@ -181,7 +232,7 @@ class Scene:
 		self.children.append(new_entity)
 		new_entity.parent = self
 
-	def render(self, is_display=True, layers: list=None, _output=True):
+	def render(self, is_display=True, layers: list=None, run_functions=True, _output=True):
 		"""This will print out all the entities that are part of the scene with their current settings. The character `¶` can be used as a whitespace in Sprites, as regular ` ` characters are considered transparent, unless the transparent parameter is disabled, in which case all whitespaces are rendered over the background.
 
 		When rendering an animation, make sure to use `time.sleep()` in between frames to set your fps. `time.sleep(0.1)` will mean a new fram every 0.1 seconds, aka 10 FPS
@@ -190,6 +241,10 @@ class Scene:
 
 		If the `layers` parameter is set, only objects on those layers will be rendered.
 		"""
+		if run_functions:
+			for function in self.render_functions:
+				function()
+
 		seperator = "\n" * (os.get_terminal_size().lines - self.size[1]) if self.use_seperator else ""
 		display = [[self.get_background()] * self.size[0] for _ in range(self.size[1])]
 
@@ -230,7 +285,7 @@ class Scene:
 
 	def is_entity_at(self, pos: tuple, layers: list=[-1]):
 		"""Check for any object at a specific position, can be sorted by layers. `-1` in the layers list means to collide with all layers"""
-		render = self.render(is_display=False, layers=None if -1 in layers else layers)
+		render = self.render(is_display=False, layers=None if -1 in layers else layers, run_functions=False)
 		pos = correct_position(pos, self.size)
 		coordinate = render[pos[1]][pos[0]]
 		if coordinate != self.get_background():

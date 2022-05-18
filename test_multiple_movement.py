@@ -1,4 +1,5 @@
 from gemini import Scene, Entity, sleep
+import threading
 
 scene = Scene((50,10), is_main_scene=True)
 block0 = Entity((0,0),(4,2))
@@ -11,7 +12,7 @@ i = 0
 while True:
 	i+=1
 	scene.render()
-	sleep(.1)
+	sleep(.05)
 	if i % 16 == 0:
 		block0.move(1,0)
 	if i % 8 == 0:

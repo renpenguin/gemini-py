@@ -6,6 +6,7 @@ CUSTOM_TERRAIN = []
 TERRAIN_WIDTH = len(CUSTOM_TERRAIN) if CUSTOM_TERRAIN else 30
 
 scene = Scene((TERRAIN_WIDTH+1,6), is_main_scene=True, clear_char=" ")
+scene.use_seperator=True
 
 walls = []
 wall_heights = CUSTOM_TERRAIN or [
@@ -47,7 +48,7 @@ while True:
 			water_count -= 1
 			times_since_placed += 1
 			break
-		if water.pos in been_to:
+		if water.pos in been_to and scene.is_entity_at((water.pos[0],water.pos[1]+1)):
 			times_since_placed = 0
 			break
 		else:
