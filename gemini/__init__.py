@@ -38,15 +38,15 @@ class Entity:
 
 	@property
 	def pos(self):
-		return list(self._pos)
+		return tuple(self._pos)
 	@pos.setter
 	def pos(self, value: tuple[int,int]|list[int,int]):
 		if len(value) != 2:
 			raise ValueError("Value should be a tuple of (x,y)")
 		if self.parent:
-			self._pos = list(correct_position(value, self.parent.size))
+			self._pos = tuple(correct_position(value, self.parent.size))
 		else:
-			self._pos = list(value)
+			self._pos = tuple(value)
 
 	def __init__(self, pos: tuple[int,int], size: tuple[int,int], parent: 'Scene'=None, auto_render=False, layer=0, fill_char="█", colour="", collisions: list[int]|bool=[], hidden=False):
 		self._parent = None
@@ -83,30 +83,35 @@ class Entity:
 		y = y if type(x) == int else x[1]
 		x = x if type(x) == int else x[0]
 
-		if x > 0 or y > 0:
+		if x != 0 or y != 0: # Only use move code if there is something to be moved
 			if collide:
 				prev_hidden = self.hidden
-				self.hide()
-				for _ in range(abs(x)):
-					colliding = False
+				self.hidden = True
+
+				x_pol = 1 if x > 0 else -1
+				y_pol = 1 if y > 0 else -1
+
+				# Move the entity as much as possible in each direction
+				
+				colliding_x = abs(x)
+				for i in range(colliding_x):
 					for wall_y in range(self.size[1]):
 						if self.parent.is_entity_at(add_pos(self.pos, (self.size[0] if x > 0 else -1, wall_y)), layers=self.collisions):
-							colliding, has_collided = True, True
-					if colliding:
+							colliding_x, has_collided = i, True
+					if colliding_x < abs(x)-1:
 						break
-					else:
-						self.pos = add_pos(self.pos, (1 if x > 0 else -1, 0))
-				for _ in range(abs(y)):
-					colliding = False
+				self.pos = add_pos(self.pos, (colliding_x * x_pol, 0))
+
+				colliding_y = abs(y)
+				for i in range(colliding_y):
 					for wall_x in range(self.size[0]):
 						if self.parent.is_entity_at(add_pos(self.pos, (wall_x, (self.size[1] if y > 0 else -1))), layers=self.collisions):
-							colliding, has_collided = True, True
-					if colliding:
+							colliding_y, has_collided = i, True
+					if colliding_y < abs(y)-1:
 						break
-					else:
-						self.pos = add_pos(self.pos, (0, 1 if y > 0 else -1))
-				if not prev_hidden:
-					self.show()
+				self.pos = add_pos(self.pos, (0, colliding_y * y_pol))
+
+				self.hidden = prev_hidden
 			else:
 				self.pos = add_pos(self.pos, (x,y))
 
@@ -159,13 +164,6 @@ class Sprite(Entity):
 
 	def __str__(self):
 		return f"Sprite(pos={self.pos},size={self.size},image='{self._image[:10]}{'...' if len(self._image) > 10 else ''}',parent={self.parent})"
-
-	def show(self):
-		"""Make the sprite shown"""
-		self.hidden = False
-	def hide(self):
-		"""Make the sprite hidden"""
-		self.hidden = True
 
 class AnimatedSprite(Sprite):
 	"""## AnimatedSprite
@@ -246,11 +244,12 @@ class Scene:
 			for function in self.render_functions:
 				function()
 
-		seperator = "\n" * (os.get_terminal_size().lines - self.size[1]) if self.use_seperator else ""
-		display = [[self.get_background()] * self.size[0] for _ in range(self.size[1])]
+		seperator = "\n" * (os.get_terminal_size().lines - self.size[1]) if self.use_seperator else "" # Create a seperator to put above display so that you can only see one rendered scene at a time
+		stage = [[self.get_background()] * self.size[0] for _ in range(self.size[1])] # Create the render 'stage'
 
-		entity_list = list(filter(lambda x: x.layer in layers, self.children)) if layers else self.children
+		entity_list = list(filter(lambda x: x.layer in layers, self.children)) if layers else self.children # Get a list of the entities the user wants to render
 		for entity in sorted(entity_list, key=lambda x: x.layer, reverse=True):
+			# Code to manually handle ascii characters that can't be monospaced
 			extra_length = 0
 			if isinstance(entity, Sprite):
 				entity_image = entity.image.split("\n")
@@ -261,6 +260,7 @@ class Scene:
 
 			for x in range(entity.size[0]+extra_length):
 				for y in range(entity.size[1]):
+					# Add each pixel of an entity to the stage
 					if isinstance(entity, Sprite):
 						try:
 							pixel = entity_image.split("\n")[y][x]
@@ -273,12 +273,12 @@ class Scene:
 
 					point = [entity.pos[0]+x, entity.pos[1]+y]
 					point = correct_position(point, self.size)
-					display[point[1]][point[0]] = f"{entity.colour}{pixel.replace('¶',' ')}{txtcolours.END if entity.colour else ''}"
+					stage[point[1]][point[0]] = f"{entity.colour}{pixel.replace('¶',' ')}{txtcolours.END if entity.colour else ''}"
 
 		if is_display:
-			print(seperator+"\n".join(["".join(row) for row in display])+"\n")
+			print(seperator+"\n".join(["".join(row) for row in stage])+"\n") # Render the stage
 		if _output:
-			return display
+			return stage
 
 	def get_background(self):
 		"""Return the background character with colours included"""

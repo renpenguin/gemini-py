@@ -21,5 +21,4 @@ while True:
 		block2.move(1,0)
 	if i % 2 == 0:
 		block3.move(1,0)
-	if i % 1 == 0:
-		block4.move(1,0)
+	block4.move(1,0)
