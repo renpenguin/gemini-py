@@ -19,10 +19,7 @@ def correct_position(pos: tuple[int,int], limits: tuple[int,int]=None):
 		raise ValueError("Position coordinates should have exactly 2 values")
 
 	for i in range(2):
-		if limits[i]-1 < new_pos[i]:
-			new_pos[i] -= limits[i]
-		elif -limits[i] > new_pos[i]:
-			new_pos[i] += limits[i]
+		new_pos[i] = new_pos[i] % limits[i]
 
 	return new_pos
 

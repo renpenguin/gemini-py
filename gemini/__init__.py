@@ -83,32 +83,32 @@ class Entity:
 		y = y if type(x) == int else x[1]
 		x = x if type(x) == int else x[0]
 
-		if collide:
-			prev_hidden = self.hidden
-			self.hide()
-			for _ in range(abs(x)):
-				colliding = False
-				for wall_y in range(self.size[1]):
-					if self.parent.is_entity_at(add_pos(self.pos, (self.size[0] if x > 0 else -1, wall_y)), layers=self.collisions):
-						colliding, has_collided = True, True
-				if colliding:
-					break
-				else:
-					self.pos = add_pos(self.pos, (1 if x > 0 else -1, 0))
-			for _ in range(abs(y)):
-				colliding = False
-				for wall_x in range(self.size[0]):
-					if self.parent.is_entity_at(add_pos(self.pos, (wall_x, (self.size[1] if y > 0 else -1))), layers=self.collisions):
-						colliding, has_collided = True, True
-				if colliding:
-					break
-				else:
-					self.pos = add_pos(self.pos, (0, 1 if x > 0 else -1))
-					self.pos = (self.pos[0], self.pos[1] + (1 if y > 0 else -1) )
-			if not prev_hidden:
-				self.show()
-		else:
-			self.pos = add_pos(self.pos, (x,y))
+		if x > 0 or y > 0:
+			if collide:
+				prev_hidden = self.hidden
+				self.hide()
+				for _ in range(abs(x)):
+					colliding = False
+					for wall_y in range(self.size[1]):
+						if self.parent.is_entity_at(add_pos(self.pos, (self.size[0] if x > 0 else -1, wall_y)), layers=self.collisions):
+							colliding, has_collided = True, True
+					if colliding:
+						break
+					else:
+						self.pos = add_pos(self.pos, (1 if x > 0 else -1, 0))
+				for _ in range(abs(y)):
+					colliding = False
+					for wall_x in range(self.size[0]):
+						if self.parent.is_entity_at(add_pos(self.pos, (wall_x, (self.size[1] if y > 0 else -1))), layers=self.collisions):
+							colliding, has_collided = True, True
+					if colliding:
+						break
+					else:
+						self.pos = add_pos(self.pos, (0, 1 if y > 0 else -1))
+				if not prev_hidden:
+					self.show()
+			else:
+				self.pos = add_pos(self.pos, (x,y))
 
 		if render:
 			self.parent.render()

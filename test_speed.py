@@ -5,26 +5,28 @@ from datetime import datetime
 DISTANCE = 3
 positions = [(0,6),(1,7),(3,9),(3,2),(1,5),(2,1),(6,2),(7,0),(3,2),(4,8),(2,6),(0,9),(1,0),(7,4),(4,9),(1,2),(3,4),(4,1),(4,8),(1,5)]
 
-scene = Scene((10,10), is_main_scene=True)
-scene.use_seperator = False
+scene1 = Scene((10,10), is_main_scene=True)
+scene1.use_seperator = False
 for pos in positions:
 	new_entity = Entity(pos, (1,1))
 
+before = datetime.now()
+for child in scene1.children:
+	child.move(DISTANCE, 0, collide=True)
+col_on_time = datetime.now() - before
+
+scene1.render()
+
+scene2 = Scene((10,10), is_main_scene=True)
+scene2.use_seperator = False
+for pos in positions:
+	new_entity = Entity(pos, (1,1))
 
 before = datetime.now()
-scene.render()
-print(f"It took {datetime.now()-before} to render that")
+for child in scene2.children:
+	child.move(DISTANCE, 0, collide=False)
+col_off_time = datetime.now() - before
+scene2.render()
 
-before = datetime.now()
-for child in scene.children:
-	child.move(DISTANCE,0, collide=True)
-print(f"It took {datetime.now()-before} to move that with collisions on")
-before = datetime.now()
-for child in scene.children:
-	child.move(DISTANCE,0)
-print(f"It took {datetime.now()-before} to move that with collisions off")
-
-
-before = datetime.now()
-scene.render()
-print(f"It took {datetime.now()-before} to render that")
+print(f"It took {col_on_time} to move that with collisions on")
+print(f"It took {col_off_time} to move that with collisions off")
