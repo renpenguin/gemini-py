@@ -1,4 +1,4 @@
-from gemini import Scene, Sprite, Input, txtcolours as tc
+from gemini import Scene, Sprite, Input, txtcolours as tc, sleep
 
 pacman_board = """
 ╔═══════╦═══════╗
@@ -30,15 +30,26 @@ pacman = Sprite((8,13), "O", colour=tc.YELLOW, collisions=[3], auto_render=True)
 
 scene.render()
 
+last_direction = (0,0)
+direction = (0,0)
+
+def try_set_direction(direction):
+	pass
+
 while True:
-	input = Input().get_key_press() # Wait for next key press, then move player, then render
+	input = Input().pressed_key # Wait for next key press, then move player, then render
 	if input in ["w","a","s","d","up_arrow","down_arrow","left_arrow","right_arrow"]:
 		match input:
 			case "w"|"up_arrow":
-				pacman.move(0,-1)
+				last_direction = (0,-1)
 			case "a"|"left_arrow":
-				pacman.move(-1,0)
+				last_direction = (-1,0)
 			case "s"|"down_arrow":
-				pacman.move(0,1)
+				last_direction = (0,1)
 			case "d"|"right_arrow":
-				pacman.move(1,0)
+				last_direction = (1,0)
+
+	if pacman.move(direction) == 1:
+		direction = last_direction
+		last_direction = (0,0)
+	sleep(0.1)

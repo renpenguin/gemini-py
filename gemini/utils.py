@@ -26,6 +26,9 @@ def correct_position(pos: tuple[int,int], limits: tuple[int,int]=None):
 
 	return new_pos
 
+def add_pos(pos_a, pos_b) -> tuple[int, int]:
+	return tuple(map(int.__add__, pos_a, pos_b))
+
 class _MainScene:
 	"""Helper class for main scenes"""
 

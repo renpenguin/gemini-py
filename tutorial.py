@@ -7,7 +7,7 @@ def example():
 
 	printd("Gemini Engine is a monospaced 2D ASCII-based rendering engine. Press space to see an example, and press ^C after that to continue the demo")
 	while True:
-		if Input().pressed_key == " ":
+		if Input().get_key_press() == " ":
 			break
 
 	scene = Scene((30,10))
