@@ -168,7 +168,7 @@ class Sprite(Entity):
 		self.transparent = transparent
 		self.extra_characters = extra_characters
 
-		size = (len(max(image.split("\n"))), image.count("\n") + 1)
+		size = (len(max(image.split("\n"), key= lambda x: len(x))), image.count("\n") + 1)
 
 		super().__init__(pos, size, parent, auto_render, layer, None, colour, collisions, hidden, move_functions)
 		del self._fill_char

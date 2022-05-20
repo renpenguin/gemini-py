@@ -4,8 +4,46 @@ Gemini Engine is a monospace 2D ASCII rendering engine. It includes collisions, 
 
 ## Quick start
 
+To get started, instance a Scene and an Entity, then render the scene
+
+```python
+from gemini import Scene, Entity
+
+scene = Scene(size=(20,10))
+entity = Entity(pos=(5,5),size=(2,1),parent=scene)
+
+scene.render()
+```
+
+You should get something like this in your console:
+```
+░░░░░░░░░░░░░░░░░░░░
+░░░░░░░░░░░░░░░░░░░░
+░░░░░░░░░░░░░░░░░░░░
+░░░░░░░░░░░░░░░░░░░░
+░░░░░░░░░░░░░░░░░░░░
+░░░░░██░░░░░░░░░░░░░
+░░░░░░░░░░░░░░░░░░░░
+░░░░░░░░░░░░░░░░░░░░
+░░░░░░░░░░░░░░░░░░░░
+░░░░░░░░░░░░░░░░░░░░
+```
+Look at that! You just made your first Gemini project! Now try adding a while loop to the end of your code
+```python
+from gemini import sleep
+
+while True:
+	entity.move((1,0))
+	scene.render()
+	sleep(.1)
+```
+
+Now the entity should be moving across the screen! When the entity goes out of the screen's bounds it will loop back round to the other side.
+
+## Sprites
+
 the code below will animate a car moving across the screen:
-```python3
+```python
 from gemini import Scene, Sprite, sleep
 
 car_image = """  ______
