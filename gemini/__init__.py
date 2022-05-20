@@ -1,11 +1,13 @@
 import os
 from time import sleep
 from .utils import correct_position, main_scene, txtcolours, printd, add_pos
-from .input import Input, InputNew
+from .input import Input
 
 # main engine file
 
 main_scene = main_scene
+
+# -- Entities --
 
 class Entity:
 	"""## Entity
@@ -25,7 +27,7 @@ class Entity:
 		return self._parent
 	@parent.setter
 	def parent(self, value: 'Scene'):
-		if self._parent != value or value is None:
+		if (self._parent != value or value is None) and self._parent:
 			self._parent.children.remove(self)
 		self._parent = value
 
@@ -48,7 +50,11 @@ class Entity:
 		else:
 			self._pos = tuple(value)
 
-	def __init__(self, pos: tuple[int,int], size: tuple[int,int], parent: 'Scene'=None, auto_render=False, layer=0, fill_char="█", colour="", collisions: list[int]|bool=[], hidden=False):
+	@property
+	def all_positions(self):
+		return [add_pos(self.pos, (i,j)) for i in range(self.size[0]) for j in range(self.size[1])]
+
+	def __init__(self, pos: tuple[int,int], size: tuple[int,int], parent: 'Scene'=None, auto_render=False, layer: int=0, fill_char="█", colour="", collisions: list[int]|bool=[], hidden=False, move_functions: list=[]):
 		self._parent = None
 		self._pos = [0,0]
 		self.pos = pos
@@ -56,9 +62,10 @@ class Entity:
 		self._fill_char = fill_char
 		self.colour = colour
 		self.auto_render = auto_render
-		self.layer = layer
-		self.collisions = [-1] if collisions == True else [] if type(collisions) == False else collisions
+		self.layer: int = layer
+		self.collisions: list = [-1] if collisions == True else [] if type(collisions) == False else collisions
 		self.hidden = hidden
+		self.move_functions: list[function] = move_functions
 
 		if not parent and main_scene.main_scene:
 			parent = main_scene.main_scene
@@ -69,14 +76,13 @@ class Entity:
 	def __str__(self):
 		return f"Entity(pos={self.pos},size={self.size},fill_char='{self._fill_char}',parent={self.parent})"
 
-	def move(self, x: int | tuple, y: int=None, collide: bool=None, render: bool=None):
+	def move(self, x:int|tuple, y:int|None=None, collide: bool=None, run_functions=True, render: bool=None):
 		"""Move the Entity within the scene. `+x` is right and `+y` is down. By enabling the Entity's auto_render property, calling this function will automatically render the scene that this Entity belongs to. If your scene is stuttering while animating, make sure you're only rendering the scene once per frame.
 
 		When collisions are on, the entity will collide with anything that isnt the background"""
 		if collide is None:
 			collide = self.collisions
-		if render is None:
-			render = self.auto_render
+		render = render or self.auto_render
 
 		has_collided = False
 
@@ -84,6 +90,10 @@ class Entity:
 		x = x if type(x) == int else x[0]
 
 		if x != 0 or y != 0: # Only use move code if there is something to be moved
+			if run_functions:
+				for func in self.move_functions:
+					func()
+
 			if collide:
 				prev_hidden = self.hidden
 				self.hidden = True
@@ -92,24 +102,25 @@ class Entity:
 				y_pol = 1 if y > 0 else -1
 
 				# Move the entity as much as possible in each direction
-				
-				colliding_x = abs(x)
-				for i in range(colliding_x):
-					for wall_y in range(self.size[1]):
-						if self.parent.is_entity_at(add_pos(self.pos, (self.size[0] if x > 0 else -1, wall_y)), layers=self.collisions):
-							colliding_x, has_collided = i, True
-					if colliding_x < abs(x)-1:
-						break
-				self.pos = add_pos(self.pos, (colliding_x * x_pol, 0))
 
-				colliding_y = abs(y)
-				for i in range(colliding_y):
-					for wall_x in range(self.size[0]):
-						if self.parent.is_entity_at(add_pos(self.pos, (wall_x, (self.size[1] if y > 0 else -1))), layers=self.collisions):
-							colliding_y, has_collided = i, True
-					if colliding_y < abs(y)-1:
-						break
-				self.pos = add_pos(self.pos, (0, colliding_y * y_pol))
+				if x != 0:
+					colliding_x = abs(x)
+					for i in range(colliding_x):
+						for wall_y in range(self.size[1]):
+							if self.parent.is_entity_at(add_pos(self.pos, (self.size[0] if x > 0 else -1, wall_y)), layers=self.collisions):
+								colliding_x, has_collided = i, True
+						if colliding_x < abs(x)-1:
+							break
+					self.pos = add_pos(self.pos, (colliding_x * x_pol, 0))
+				if y != 0:
+					colliding_y = abs(y)
+					for i in range(colliding_y):
+						for wall_x in range(self.size[0]):
+							if self.parent.is_entity_at(add_pos(self.pos, (wall_x, (self.size[1] if y > 0 else -1))), layers=self.collisions):
+								colliding_y, has_collided = i, True
+						if colliding_y < abs(y)-1:
+							break
+					self.pos = add_pos(self.pos, (0, colliding_y * y_pol))
 
 				self.hidden = prev_hidden
 			else:
@@ -151,7 +162,7 @@ class Sprite(Entity):
 	def image(self, value: str):
 		self._image = value
 
-	def __init__(self, pos: tuple, image: str, transparent: bool=True, parent: 'Scene'=None, auto_render=False, layer=0, colour: str="", collisions: list=[], hidden=False, extra_characters: list=[]):
+	def __init__(self, pos: tuple, image: str, transparent: bool=True, parent: 'Scene'=None, auto_render=False, layer: int=0, colour: str="", collisions: list=[], hidden=False, move_functions: list=[], extra_characters: list=[]):
 		self.old_image = image
 		self._image = image
 		self.transparent = transparent
@@ -159,7 +170,7 @@ class Sprite(Entity):
 
 		size = (len(max(image.split("\n"))), image.count("\n") + 1)
 
-		super().__init__(pos, size, parent, auto_render, layer, "", colour, collisions, hidden)
+		super().__init__(pos, size, parent, auto_render, layer, None, colour, collisions, hidden, move_functions)
 		del self._fill_char
 
 	def __str__(self):
@@ -188,14 +199,16 @@ class AnimatedSprite(Sprite):
 	def max_frame(self):
 		"""returns the largest possible frame"""
 		return len(self.frames)-1
-	def __init__(self, pos: tuple, frames: list, transparent: bool = True, parent: 'Scene' = None, auto_render=False, layer=0, colour: str = "", collisions: list = [], hidden=False, extra_characters: list = []):
+	def __init__(self, pos: tuple, frames: list, transparent: bool = True, parent: 'Scene' = None, auto_render=False, layer=0, colour: str = "", collisions: list = [], hidden=False, move_functions: list=[], extra_characters: list = []):
 		self.frames = frames
 		self._current_frame = 0
 		self.current_frame
-		super().__init__(pos, frames[0], transparent, parent, auto_render, layer, colour, collisions, hidden, extra_characters)
+		super().__init__(pos, frames[0], transparent, parent, auto_render, layer, colour, collisions, hidden, move_functions, extra_characters)
 
 	def next_frame(self):
 		self.current_frame += 1
+
+# -- Scene --
 
 class Scene:
 	"""## Scene
@@ -212,12 +225,13 @@ class Scene:
 
 	The `render_functions` parameter is to be a list of functions to run before any render, except when the `run_functions` parameter is set to False"""
 	use_seperator = True
+	_void_char = '¶'
 
-	def __init__(self, size: tuple, clear_char="░", bg_colour="", render_functions: list=[], is_main_scene=False):
+	def __init__(self, size:tuple, clear_char="░", bg_colour="", children:list[Entity]=[], render_functions: list=[], is_main_scene=False):
 		self.size = size
 		self.clear_char = clear_char
 		self.bg_colour = bg_colour
-		self.children: list[Entity|Sprite] = []
+		self.children: list[Entity|Sprite|AnimatedSprite] = children
 		self.render_functions: list[function] = render_functions
 
 		if is_main_scene:
@@ -234,11 +248,11 @@ class Scene:
 	def render(self, is_display=True, layers: list=None, run_functions=True, _output=True):
 		"""This will print out all the entities that are part of the scene with their current settings. The character `¶` can be used as a whitespace in Sprites, as regular ` ` characters are considered transparent, unless the transparent parameter is disabled, in which case all whitespaces are rendered over the background.
 
-		When rendering an animation, make sure to use `time.sleep()` in between frames to set your fps. `time.sleep(0.1)` will mean a new fram every 0.1 seconds, aka 10 FPS
+		When rendering an animation, make sure to put a short pause in between frames to set your fps. `gemini.sleep(0.1)` will mean a new fram every 0.1 seconds, aka 10 FPS
 
 		If your scene is stuttering while animating, make sure you're only rendering the scene once per frame
 
-		If the `layers` parameter is set, only objects on those layers will be rendered.
+		If the `layers` parameter is set, only entities on those layers will be rendered. Entities will also be rendered in the order of layers, with the smallest layer first
 		"""
 		if run_functions:
 			for function in self.render_functions:
@@ -273,7 +287,7 @@ class Scene:
 
 					point = [entity.pos[0]+x, entity.pos[1]+y]
 					point = correct_position(point, self.size)
-					stage[point[1]][point[0]] = f"{entity.colour}{pixel.replace('¶',' ')}{txtcolours.END if entity.colour else ''}"
+					stage[point[1]][point[0]] = f"{entity.colour}{pixel.replace(self._void_char,' ')}{txtcolours.END if entity.colour else ''}"
 
 		if is_display:
 			print(seperator+"\n".join(["".join(row) for row in stage])+"\n") # Render the stage
@@ -289,8 +303,13 @@ class Scene:
 		render = self.render(is_display=False, layers=None if -1 in layers else layers, run_functions=False)
 		pos = correct_position(pos, self.size)
 		coordinate = render[pos[1]][pos[0]]
-		if coordinate != self.get_background():
-			return True
+		return coordinate != self.get_background()
+
+	def get_entities_at(self, pos: tuple[int, int], layers: list[int]=[]):
+		entities: list[Entity] = list(filter(lambda x: x.layer in layers, self.children)) if layers else self.children
+
+		return list(filter(lambda x: pos in x.all_positions, entities))
+
 
 if __name__ == "__main__":
 	print("This is the module file, please use a provided example instead")

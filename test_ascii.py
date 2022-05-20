@@ -1,7 +1,6 @@
 from gemini import Scene, Sprite, AnimatedSprite, sleep, txtcolours as tc
 
 scene1 = Scene((30,10))
-scene1.use_seperator = False
 bob = AnimatedSprite((10,3),["¯\_(ツ)_/¯","_/¯(ツ)¯\_"], parent=scene1, colour=tc.BOLD, extra_characters=[1])
 
 test_image = """  ______

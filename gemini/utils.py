@@ -48,13 +48,27 @@ class txtcolours:
 	>>> entity1 = Entity(pos=(3,1),size=(2,1),colour=tc.RED)
 
 	this will make entity1 red"""
-	PURPLE = '\033[95m'
-	BLUE = '\033[94m'
-	CYAN = '\033[96m'
-	GREEN = '\033[92m'
-	YELLOW = '\033[93m'
-	RED = '\033[91m'
-	END = '\033[0m'
-	BOLD = '\033[1m'
-	UNDERLINE = '\033[4m'
-	COLOURS = [PURPLE, BLUE, CYAN, GREEN, YELLOW, RED]
+
+	def txt_mod(id: int):
+		return f'\033[{id}m'
+
+	END = txt_mod(0)
+	BOLD = txt_mod(1)
+	LIGHT = txt_mod(2)
+	ITALIC = txt_mod(3)
+	UNDERLINE = txt_mod(4)
+	INVERTED = txt_mod(7)
+	CROSSED = txt_mod(9)
+
+	ALT_GREY, GREY, INVERTED_GREY = txt_mod(30), txt_mod(90), txt_mod(40)
+	ALT_RED, RED, INVERTED_RED = txt_mod(31), txt_mod(91), txt_mod(41)
+	ALT_GREEN, GREEN, INVERTED_GREEN = txt_mod(32), txt_mod(92), txt_mod(42)
+	ALT_YELLOW, YELLOW, INVERTED_YELLOW = txt_mod(33), txt_mod(93), txt_mod(43)
+	ALT_BLUE, BLUE, INVERTED_BLUE = txt_mod(34), txt_mod(94), txt_mod(44)
+	ALT_PURPLE, PURPLE, INVERTED_PURPLE = txt_mod(35), txt_mod(95), txt_mod(45)
+	ALT_CYAN, CYAN, INVERTED_CYAN = txt_mod(36), txt_mod(96), txt_mod(46)
+
+	COLOURS = [RED, GREEN, YELLOW, BLUE, PURPLE, CYAN]
+	ALT_COLOURS = [ALT_RED, ALT_GREEN, ALT_YELLOW, ALT_BLUE, ALT_PURPLE, ALT_CYAN]
+	INVERTED_COLOURS = [INVERTED_RED, INVERTED_GREEN, INVERTED_YELLOW, INVERTED_BLUE, INVERTED_PURPLE, INVERTED_CYAN]
+	ALL_COLOURS = COLOURS + ALT_COLOURS
