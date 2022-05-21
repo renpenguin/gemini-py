@@ -8,9 +8,9 @@ test_image = """  ______
 (¶¶¶_¶¶¶¶_¶_\\
 =`-(_)--(_)-'"""
 
-scene2 = Scene((30,10), bg_colour=tc.CYAN, is_main_scene=True)
+scene2 = Scene((30,10), bg_colour=tc.CYAN)
 scene2.use_seperator = False
-car = Sprite((5,5), test_image, colour=tc.GREEN)
+car = Sprite((5,5), test_image, parent=scene2, colour=tc.GREEN)
 
 while True:
 	for direction in [(0,1),(-1,-1),(0,1),(1,-1)]:

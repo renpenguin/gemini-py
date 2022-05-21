@@ -24,9 +24,8 @@ pacman_board = """
 
 ghost_spawn_point = (8,8)
 
-scene = Scene((17,19),clear_char=" ", is_main_scene=True)
+scene = Scene((17,19),clear_char=" ",is_main_scene=True)
 walls = Sprite((0,-1),image=pacman_board, colour=tc.BLUE, layer=3)
-
 total_pac_dots = 0
 
 for x in range(scene.size[0]):
@@ -69,7 +68,7 @@ while True:
 		direction = (0,0)
 	if scene.is_entity_at(pacman.pos, [5]):
 		total_pac_dots -= 1
-		removed_dot: Sprite = scene.get_entities_at(pacman.pos)[0]
+		removed_dot: Entity = scene.get_entities_at(pacman.pos, layers=[5])[0]
 		removed_dot.parent = None
 		del removed_dot
 

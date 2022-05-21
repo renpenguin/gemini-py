@@ -67,9 +67,7 @@ class Entity:
 		self.hidden = hidden
 		self.move_functions: list[function] = move_functions
 
-		if not parent and main_scene.main_scene:
-			parent = main_scene.main_scene
-		self._parent = parent
+		parent = parent or main_scene.main_scene
 		if parent:
 			parent.add_to_scene(self)
 
