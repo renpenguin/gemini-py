@@ -39,6 +39,12 @@ class _MainScene:
 	@main_scene.setter
 	def main_scene(self, value):
 		self._main_scene = value
+
+	def __str__(self) -> str:
+		return str(self.main_scene)
+
+	def __repr__(self) -> str:
+		return self.main_scene
 main_scene = _MainScene()
 
 class txtcolours:

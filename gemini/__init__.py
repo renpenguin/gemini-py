@@ -5,7 +5,7 @@ from .input import Input
 
 # main engine file
 
-main_scene = main_scene
+# main_scene = main_scene
 
 # -- Entities --
 
@@ -26,10 +26,11 @@ class Entity:
 	def parent(self):
 		return self._parent
 	@parent.setter
-	def parent(self, value: 'Scene'):
+	def parent(self, value: 'Scene', _sync_parent=True):
 		if (self._parent != value or value is None) and self._parent:
 			self._parent.children.remove(self)
-		self._parent = value
+		if value != None and _sync_parent:
+			value.add_to_scene(self)
 
 	@property
 	def fill_char(self):
@@ -37,7 +38,6 @@ class Entity:
 	@fill_char.setter
 	def fill_char(self, value: str):
 		self._fill_char = value
-
 	@property
 	def pos(self):
 		return tuple(self._pos)
@@ -49,13 +49,12 @@ class Entity:
 			self._pos = tuple(correct_position(value, self.parent.size))
 		else:
 			self._pos = tuple(value)
-
 	@property
 	def all_positions(self):
 		return [add_pos(self.pos, (i,j)) for i in range(self.size[0]) for j in range(self.size[1])]
 
 	def __init__(self, pos: tuple[int,int], size: tuple[int,int], parent: 'Scene'=None, auto_render=False, layer: int=0, fill_char="█", colour="", collisions: list[int]|bool=[], hidden=False, move_functions: list=[]):
-		self._parent = None
+		self._parent: 'Scene' = None
 		self._pos = [0,0]
 		self.pos = pos
 		self.size = size
@@ -67,9 +66,10 @@ class Entity:
 		self.hidden = hidden
 		self.move_functions: list[function] = move_functions
 
-		parent = parent or main_scene.main_scene
+		parent = parent if parent else main_scene.main_scene
 		if parent:
-			parent.add_to_scene(self)
+			# parent.add_to_scene(self)
+			self.parent = parent
 
 	def __str__(self):
 		return f"Entity(pos={self.pos},size={self.size},fill_char='{self._fill_char}',parent={self.parent})"
@@ -161,7 +161,6 @@ class Sprite(Entity):
 		self._image = value
 
 	def __init__(self, pos: tuple, image: str, transparent: bool=True, parent: 'Scene'=None, auto_render=False, layer: int=0, colour: str="", collisions: list=[], hidden=False, move_functions: list=[], extra_characters: list=[]):
-		self.old_image = image
 		self._image = image
 		self.transparent = transparent
 		self.extra_characters = extra_characters
@@ -224,24 +223,30 @@ class Scene:
 	The `render_functions` parameter is to be a list of functions to run before any render, except when the `run_functions` parameter is set to False"""
 	use_seperator = True
 	_void_char = '¶'
+	@property
+	def is_main_scene(self):
+		return main_scene.main_scene == self
+	@is_main_scene.setter
+	def is_main_scene(self, value):
+		main_scene.main_scene = self if value else None
 
 	def __init__(self, size:tuple, clear_char="░", bg_colour="", children:list[Entity]=[], render_functions: list=[], is_main_scene=False):
 		self.size = size
 		self.clear_char = clear_char
 		self.bg_colour = bg_colour
-		self.children: list[Entity|Sprite|AnimatedSprite] = children
+		self.children: list[Entity] = children
 		self.render_functions: list[function] = render_functions
 
 		if is_main_scene:
-			main_scene.main_scene = self
+			self.is_main_scene = True
 
 	def __str__(self):
-		return f"Scene(size={self.size},clear_char='{self.clear_char}',bg_colour='{self.bg_colour}',is_main_scene={self == main_scene.main_scene})"
+		return f"Scene(size={self.size},clear_char='{self.clear_char}',is_main_scene={self.is_main_scene})"
 
 	def add_to_scene(self, new_entity: Entity):
 		"""Add an entity to the scene. This can be used instead of directly defining the entity's parent, or if you want to move the entity between different scenes"""
 		self.children.append(new_entity)
-		new_entity.parent = self
+		new_entity._parent = self
 
 	def render(self, is_display=True, layers: list=None, run_functions=True, _output=True):
 		"""This will print out all the entities that are part of the scene with their current settings. The character `¶` can be used as a whitespace in Sprites, as regular ` ` characters are considered transparent, unless the transparent parameter is disabled, in which case all whitespaces are rendered over the background.

@@ -1,7 +1,7 @@
 import random
 from gemini import Scene, Sprite, Entity, sleep
 
-IS_WAIT = False
+IS_WAIT = True
 CUSTOM_TERRAIN = []
 TERRAIN_WIDTH = len(CUSTOM_TERRAIN) if CUSTOM_TERRAIN else 30
 
