@@ -9,6 +9,8 @@ from .input import Input
 
 # -- Entities --
 
+# -- Entities --
+
 class Entity:
 	"""## Entity
 	The Entity is the most basic object in a Gemini Scene. It is simply a rectangle of your chosen proportions. You can create a new entity like so.
@@ -26,10 +28,10 @@ class Entity:
 	def parent(self):
 		return self._parent
 	@parent.setter
-	def parent(self, value: 'Scene', _sync_parent=True):
+	def parent(self, value: 'Scene'):
 		if (self._parent != value or value is None) and self._parent:
 			self._parent.children.remove(self)
-		if value != None and _sync_parent:
+		if value != None:
 			value.add_to_scene(self)
 
 	@property
@@ -223,6 +225,7 @@ class Scene:
 	The `render_functions` parameter is to be a list of functions to run before any render, except when the `run_functions` parameter is set to False"""
 	use_seperator = True
 	_void_char = '¶'
+
 	@property
 	def is_main_scene(self):
 		return main_scene.main_scene == self
