@@ -5,10 +5,6 @@ from .input import Input
 
 # main engine file
 
-# main_scene = main_scene
-
-# -- Entities --
-
 # -- Entities --
 
 class Entity:
@@ -233,11 +229,11 @@ class Scene:
 	def is_main_scene(self, value):
 		main_scene.main_scene = self if value else None
 
-	def __init__(self, size:tuple, clear_char="░", bg_colour="", children:list[Entity]=[], render_functions: list=[], is_main_scene=False):
+	def __init__(self, size:tuple, clear_char="░", bg_colour="", children: list[Entity]=[], render_functions: list=[], is_main_scene=False):
 		self.size = size
 		self.clear_char = clear_char
 		self.bg_colour = bg_colour
-		self.children: list[Entity] = children
+		self.children: list[Entity] = children + [] # +[] to clone the list, to fix bug
 		self.render_functions: list[function] = render_functions
 
 		if is_main_scene:

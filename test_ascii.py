@@ -12,12 +12,6 @@ scene2 = Scene((32,10), bg_colour=tc.INVERTED_CYAN)
 scene2.use_seperator = False
 car = Sprite((5,5), test_image, parent=scene2, colour=tc.INVERTED_GREEN)
 
-print(bob.parent)
-print(car.parent)
-print(scene1.children)
-
-# quit()
-
 while True:
 	for direction in [(0,1),(-1,-1),(0,1),(1,-1)]:
 		for _ in range(4):
