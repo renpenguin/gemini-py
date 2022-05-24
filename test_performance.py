@@ -2,7 +2,7 @@ from gemini import Scene, Entity
 import random
 from datetime import datetime
 
-DISTANCE = 3
+DISTANCE = 2
 positions = [(0,6),(1,7),(3,9),(3,2),(1,5),(2,1),(6,2),(7,0),(3,2),(4,8),(2,6),(0,9),(1,0),(7,4),(4,9),(1,2),(3,4),(4,1),(4,8),(1,5)]
 
 scene1 = Scene((10,10), is_main_scene=True)

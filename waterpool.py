@@ -1,5 +1,5 @@
-import random, json
-from gemini import Scene, Sprite, Entity, sleep, Input
+import random
+from gemini import Scene, Sprite, Entity, sleep
 
 IS_WAIT = False
 CUSTOM_TERRAIN = []
