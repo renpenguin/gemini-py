@@ -1,6 +1,8 @@
 from gemini import Scene, Entity, Sprite, AnimatedSprite, Input, txtcolours as tc, sleep, add_pos
 import random
 
+USE_POWERUPS = False
+
 pacman_board = """
 ╔═══════╦═══════╗
 ║       ║       ║
@@ -34,27 +36,37 @@ def try_set_direction(new_direction):
 		global direction
 		direction = new_direction
 
+# Setup
+
 scene = Scene((17,19),clear_char=" ",is_main_scene=True)
 walls = Sprite((0,-1),image=pacman_board, colour=tc.BLUE, layer=3)
-total_pac_dots = 0
-
-pacman = AnimatedSprite((8,13), ['O', 'ᗤ'], colour=tc.YELLOW, collisions=[3], layer=1)
+pacman = AnimatedSprite((8,13), ['O','ᗤ','Ↄ','ᗤ'], colour=tc.YELLOW, collisions=[3], layer=1)
 pacman.move_functions.append(pacman.next_frame)
+last_direction = (0,0)
+direction = (0,0)
 
+# Dots
+
+total_pac_dots = 0
 for x in range(scene.size[0]):
 	for y in range(scene.size[1]):
 		if not scene.is_entity_at((x,y), layers=[3]):
 			total_pac_dots += 1
-			pac_dot = Entity((x,y), (1,1), fill_char='.', layer=5)
-
-last_direction = (0,0)
-direction = (0,0)
+			pac_dot = Entity((x,y), (1,1), layer=5)
+			pac_dot.powerup = (x,y) in [(1,1),(15,1),(1,17),(15,17)] and USE_POWERUPS
+			pac_dot.fill_char = "•" if pac_dot.powerup else "."
 
 def collect_dots():
+	for smell in smell_points:
+		smell.smell -= 1
+
 	if scene.is_entity_at(pacman.pos, 5):
 		global total_pac_dots
 		total_pac_dots -= 1
-		removed_dot: Entity = scene.get_entities_at(pacman.pos, [5])[0]
+		removed_dot = scene.get_entities_at(pacman.pos, [5])[0]
+		if removed_dot.powerup:
+			global ghosts_scared
+			ghosts_scared = 50
 		removed_dot.parent = None
 		del removed_dot
 
@@ -77,24 +89,36 @@ for pos, smell in smell_board:
 
 # Ghosts
 
+ghost_colours = [tc.RED, tc.YELLOW, tc.CYAN, tc.GREEN]
 ghosts = [
-	Sprite((8,7), 'ᗣ', colour=colour, layer=4, collisions=[3]) for colour in [tc.RED,tc.YELLOW,tc.CYAN,tc.GREEN]
+	Sprite((8,7), 'ᗣ', colour=colour, layer=4, collisions=[3]) for colour in ghost_colours
 ]
+for i, g in enumerate(ghosts): g.wait_time = (i+1)*20
+ghosts_scared = 0
 
 def move_ghosts():
-	global gametime
-	for ghost in ghosts[:min(int(gametime/20),4)]:
+	global gametime, ghosts_scared
+	if ghosts_scared > 0:
+		ghosts_scared -= 1
+	for i, ghost in enumerate(ghosts):
+		if ghost.wait_time > 0:
+			ghost.wait_time -= 1
+			continue
+		if ghosts_scared > 15:
+			ghost.colour = tc.BLUE
+		elif ghosts_scared > 0:
+			ghost.colour = tc.BLUE if gametime % 6 > 2 else ""
+		else:
+			ghost.colour = ghost_colours[i]
 		if random.randint(0,10) > 3:
 			directions = [get_smell_at(add_pos(ghost.pos,dir,limits=scene.size)) for dir in [(1,0),(-1,0),(0,1),(0,-1)]]
 			directions = list(filter(lambda x: x is not None, directions))
-			direction = sorted(directions, key=lambda x: x.smell, reverse=True)[0]
+			direction = sorted(directions, key=lambda x: x.smell, reverse=ghosts_scared==0)[0]
 			ghost.move((add_pos(direction.pos, ghost.pos, int.__sub__)))
 
-			if scene.is_entity_at(ghost.pos, pacman.layer):
-				return 1
-
 gametime = 0
-while True:
+game_over = False
+while not game_over:
 	gametime += 1
 	scene.render()
 	print(f"Dots left: {total_pac_dots}")
@@ -112,20 +136,26 @@ while True:
 	elif input == " ":
 		break
 
-	if not scene.is_entity_at(add_pos(pacman.pos, last_direction), pacman.collisions):
-		direction = last_direction
-	if pacman.move(direction) == 1:
-		direction = (0,0)
-	for smell in smell_points:
-		smell.smell -= 1
 	get_smell_at(pacman.pos).smell = 0
 	if collect_dots() == 1:
 		scene.render()
 		print("\nYou win!\n")
-		break
-	if move_ghosts() == 1:
-		scene.render()
-		print("\nYou lose!\n")
-		break
+		game_over = True
+	move_ghosts()
+
+	if not scene.is_entity_at(add_pos(pacman.pos, last_direction), pacman.collisions):
+		direction = last_direction
+	if pacman.move(direction) == 1:
+		direction = (0,0)
+
+	for ghost in ghosts:
+		if scene.is_entity_at(ghost.pos, pacman.layer):
+			if ghosts_scared > 0:
+				ghost.pos = (8,7)
+				ghost.wait_time = 25
+			else:
+				scene.render()
+				print("\nYou lose!\n")
+				game_over = True
 
 	sleep(0.1)
