@@ -23,8 +23,12 @@ def correct_position(pos: tuple[int,int], limits: tuple[int,int]=None):
 
 	return new_pos
 
-def add_pos(pos_a, pos_b) -> tuple[int, int]:
-	return tuple(map(int.__add__, pos_a, pos_b))
+def add_pos(pos_a,pos_b, effect=int.__add__,limits: tuple[int, int]=None) -> tuple[int, int]:
+	r = map(effect, pos_a, pos_b)
+	if limits:
+		return tuple(correct_position(r, limits))
+	else:
+		return tuple(r)
 
 class _MainScene:
 	"""Helper class for main scenes"""

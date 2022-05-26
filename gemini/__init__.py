@@ -302,12 +302,14 @@ class Scene:
 
 	def is_entity_at(self, pos: tuple, layers: list=[-1]):
 		"""Check for any object at a specific position, can be sorted by layers. `-1` in the layers list means to collide with all layers"""
+		layers = layers if isinstance(layers, list) else [layers]
 		render = self.render(is_display=False, layers=None if -1 in layers else layers, run_functions=False)
 		pos = correct_position(pos, self.size)
 		coordinate = render[pos[1]][pos[0]]
 		return coordinate != self.get_background()
 
-	def get_entities_at(self, pos: tuple[int, int], layers: list[int]=[]):
+	def get_entities_at(self, pos: tuple[int, int], layers: list[int]=[]) -> list[Entity]:
+		layers = layers if isinstance(layers, list) else [layers]
 		entities: list[Entity] = list(filter(lambda x: x.layer in layers, self.children)) if layers else self.children
 
 		return list(filter(lambda x: pos in x.all_positions, entities))
