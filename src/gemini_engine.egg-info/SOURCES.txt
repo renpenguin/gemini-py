@@ -1,0 +1,11 @@
+LICENSE
+README.md
+pyproject.toml
+setup.cfg
+src/gemini/__init__.py
+src/gemini/input.py
+src/gemini/utils.py
+src/gemini_engine.egg-info/PKG-INFO
+src/gemini_engine.egg-info/SOURCES.txt
+src/gemini_engine.egg-info/dependency_links.txt
+src/gemini_engine.egg-info/top_level.txt

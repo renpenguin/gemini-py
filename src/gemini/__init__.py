@@ -72,7 +72,7 @@ class Entity:
 	def __str__(self):
 		return f"Entity(pos={self.pos},size={self.size},fill_char='{self._fill_char}',parent={self.parent})"
 
-	def move(self, x:int|tuple, y:int|None=None, collide: bool=None, run_functions=True, render: bool=None):
+	def move(self, x:int|tuple, y:int=None, collide: bool=None, run_functions=True, render: bool=None):
 		"""Move the Entity within the scene. `+x` is right and `+y` is down. By enabling the Entity's auto_render property, calling this function will automatically render the scene that this Entity belongs to. If your scene is stuttering while animating, make sure you're only rendering the scene once per frame.
 
 		When collisions are on, the entity will collide with anything that isnt the background"""
