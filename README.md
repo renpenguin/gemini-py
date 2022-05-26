@@ -2,7 +2,7 @@
 
 Gemini Engine is a monospace 2D ASCII rendering engine. It includes collisions, layers, inputs and the ability to handle solid objects as well as ascii art. The main library is currently contained in the gemini folder, and everything outside is examples.
 
-WARNING: Because of the way my code works, you HAVE to use a monospace font in the terminal
+WARNING: It’s important to use a monospace font in the terminal for the engine to render images properly
 
 ## Quick start
 

@@ -233,7 +233,7 @@ class Scene:
 		self.size = size
 		self.clear_char = clear_char
 		self.bg_colour = bg_colour
-		self.children: list[Entity] = children + [] # +[] to clone the list, to fix bug
+		self.children: list[Entity] = children[:]
 		self.render_functions: list[function] = render_functions
 
 		if is_main_scene:

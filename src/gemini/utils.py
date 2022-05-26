@@ -1,4 +1,4 @@
-import sys, time, math
+import sys, time, enum
 
 def printd(*texts: str, delay=0.01, skip_delay_characters=[" "]):
 	"""Delayed print function. A simple print function that can be used in place of the usual print to have your text print out character by character, like in text adventure games!"""
@@ -30,6 +30,31 @@ def add_pos(pos_a,pos_b, effect=int.__add__,limits: tuple[int, int]=None) -> tup
 	else:
 		return tuple(r)
 
+class Vec2D:
+	"""Helper class for positions and sizes"""
+	def __init__(self, x: tuple|int, y:int=None):
+		self.y = y if type(x) == int else x[1]
+		self.x = x if type(x) == int else x[0]
+
+	def __str__(self):
+		return str(self.__repr__())
+
+	def __repr__(self):
+		return (self.x, self.y)
+
+	def __getitem__(self, i):
+		if i > 1:
+			raise IndexError("Vec2D has no elements outside of x and y")
+		return self.__repr__()[i]
+
+	def __add__(self, value):
+		return add_pos(self, value)
+
+	def __sub__(self, value):
+		return add_pos(self, value, int.__sub__)
+
+print(Vec2D(5,1)-Vec2D(1,2))
+
 class _MainScene:
 	"""Helper class for main scenes"""
 
@@ -51,7 +76,7 @@ class _MainScene:
 		return self.main_scene
 main_scene = _MainScene()
 
-class txtcolours:
+class txtcolours(enum.Enum):
 	"""txtcolours can be used to set an entity's colour, like so:
 	>>> from gemini import Scene, Entity, txtcolours as tc
 	>>> scene = Scene((10,10))
@@ -82,3 +107,6 @@ class txtcolours:
 	ALT_COLOURS = [ALT_RED, ALT_GREEN, ALT_YELLOW, ALT_BLUE, ALT_PURPLE, ALT_CYAN]
 	INVERTED_COLOURS = [INVERTED_RED, INVERTED_GREEN, INVERTED_YELLOW, INVERTED_BLUE, INVERTED_PURPLE, INVERTED_CYAN]
 	ALL_COLOURS = COLOURS + ALT_COLOURS
+
+print(txtcolours.RED)
+print(txtcolours['RED'])
