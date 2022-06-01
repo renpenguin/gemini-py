@@ -30,7 +30,7 @@ class Entity:
 
 	@property
 	def fill_char(self):
-		return self._fill_char if not self.hidden else self.parent.get_background()
+		return self.parent.get_background() if self.hidden else self._fill_char
 	@fill_char.setter
 	def fill_char(self, value: str):
 		self._fill_char = value
@@ -49,8 +49,7 @@ class Entity:
 
 	def __init__(self, pos: Vec2D, size: tuple[int,int], parent: 'Scene'=None, auto_render:bool=False, layer: int=0, fill_char:str="█", colour:str="", collisions: list[int]|bool=[], hidden:bool=False, move_functions: list=[]):
 		self._parent: 'Scene' = None
-		parent = parent if parent else main_scene.main_scene
-		if parent:
+		if parent := parent or main_scene.main_scene:
 			self.parent = parent
 
 		self._pos = Vec2D(0,0)
@@ -88,7 +87,6 @@ class Entity:
 				prev_hidden = self.hidden
 				self.hidden = True
 
-				x_pol = 1 if move.x > 0 else -1
 				y_pol = 1 if move.y > 0 else -1
 
 				# Move the entity as much as possible in each direction
@@ -101,6 +99,7 @@ class Entity:
 								colliding_x, has_collided = i, True
 						if colliding_x < abs(move.x)-1:
 							break
+					x_pol = 1 if move.x > 0 else -1
 					self.pos += (colliding_x * x_pol, 0)
 				if y != 0:
 					colliding_y = abs(move.y)
@@ -147,7 +146,7 @@ class Sprite(Entity):
 	@property
 	def image(self):
 		"""This will return nothing if the sprite is hidden, to always get the raw image"""
-		return self._image if not self.hidden else " \n"*self.size[1]
+		return " \n"*self.size[1] if self.hidden else self._image
 	@image.setter
 	def image(self, value: str):
 		self._image = value
