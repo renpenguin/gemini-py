@@ -61,10 +61,7 @@ main_scene = _MainScene()
 
 def add_pos(pos_a,pos_b, effect=int.__add__, limits: tuple[int, int]=None):
 	r = map(effect, pos_a, pos_b)
-	if limits:
-		return correct_position(r, limits)
-	else:
-		return Vec2D(list(r))
+	return correct_position(r, limits) if limits else Vec2D(list(r))
 
 class Vec2D:
 	"""Helper class for positions and sizes. A set of two ints. Can be initalised with `Vec2D(5,4)` or with `Vec2D([5,4])` Can also just be a replacement for `tuple[int,int]`"""
@@ -112,8 +109,8 @@ class txtcolours:
 
 	this will make entity1 red"""
 
-	def txt_mod(id: int):
-		return f'\033[{id}m'
+	def txt_mod(self):
+		return f'\x1b[{self}m'
 
 	END = txt_mod(0)
 	BOLD = txt_mod(1)
