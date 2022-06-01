@@ -87,8 +87,7 @@ class Vec2D:
 	def __sub__(self, value: 'Vec2D'):
 		return Vec2D(add_pos(self, value, int.__sub__))
 	def __eq__(self, value: 'Vec2D') -> bool:
-		value = Vec2D(value)
-		return self.__repr__() == value.__repr__()
+		return self.__repr__() == Vec2D(value).__repr__()
 
 	def normalised(self):
 		return Vec2D([i/abs(i) for i in self])

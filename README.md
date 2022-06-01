@@ -8,7 +8,7 @@ WARNING: It’s important to use a monospace font in the terminal for the engine
 
 ## Quick start
 
-Mypy can be installed using pip:
+Gemini Engine can be installed using pip:
 
 ```
 python3 -m pip install -U gemini-engine
