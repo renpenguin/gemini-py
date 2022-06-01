@@ -9,51 +9,32 @@ def printd(*texts: str, delay=0.01, skip_delay_characters=[" "]):
 			time.sleep(delay)
 	print()
 
-def correct_position(pos: tuple[int,int], limits: tuple[int,int]=None):
-	if not limits:
-		limits = main_scene.size
+def parametrized(dec):
+    def layer(*args, **kwargs):
+        def repl(f):
+            return dec(f, *args, **kwargs)
+        return repl
+    return layer
 
-	new_pos = list(pos)
+@parametrized
+def force_types(func, skip=0, ignore_types=[]):
+	"""`*args` should be fully hinted. Class functions (starting with self parameter) do not yet work"""
+	def wraps(*args, **kwargs):
+		args = list(args)
+		keys_list = list(func.__annotations__.keys())
+		for i, a in enumerate(args[skip:], skip-1):
+			arg_type = func.__annotations__[keys_list[i]]
+			if callable(arg_type) and arg_type not in ignore_types:
+				args[i] = arg_type(a)
 
-	if len(new_pos) != 2:
-		raise ValueError("Position coordinates should have exactly 2 values")
-
-	for i in range(2):
-		new_pos[i] = new_pos[i] % limits[i]
-
-	return new_pos
-
-def add_pos(pos_a,pos_b, effect=int.__add__,limits: tuple[int, int]=None) -> tuple[int, int]:
-	r = map(effect, pos_a, pos_b)
-	if limits:
-		return tuple(correct_position(r, limits))
-	else:
-		return tuple(r)
-
-class Vec2D:
-	"""Helper class for positions and sizes"""
-	def __init__(self, x: tuple|int, y:int=None):
-		self.y = y if type(x) == int else x[1]
-		self.x = x if type(x) == int else x[0]
-
-	def __str__(self):
-		return str(self.__repr__())
-
-	def __repr__(self):
-		return (self.x, self.y)
-
-	def __getitem__(self, i):
-		if i > 1:
-			raise IndexError("Vec2D has no elements outside of x and y")
-		return self.__repr__()[i]
-
-	def __add__(self, value):
-		return add_pos(self, value)
-
-	def __sub__(self, value):
-		return add_pos(self, value, int.__sub__)
-
-print(Vec2D(5,1)-Vec2D(1,2))
+		for k,v in kwargs.items():
+			if k in func.__annotations__:
+				arg_type = func.__annotations__[k]
+				if callable(arg_type):
+					kwargs[k] = arg_type(v)
+		return func(*args, **kwargs)
+	wraps.__unwrapped__ = func
+	return wraps
 
 class _MainScene:
 	"""Helper class for main scenes"""
@@ -76,7 +57,55 @@ class _MainScene:
 		return self.main_scene
 main_scene = _MainScene()
 
-class txtcolours(enum.Enum):
+# Vec2D
+
+def add_pos(pos_a,pos_b, effect=int.__add__, limits: tuple[int, int]=None):
+	r = map(effect, pos_a, pos_b)
+	if limits:
+		return correct_position(r, limits)
+	else:
+		return Vec2D(list(r))
+
+class Vec2D:
+	"""Helper class for positions and sizes. A set of two ints. Can be initalised with `Vec2D(5,4)` or with `Vec2D([5,4])` Can also just be a replacement for `tuple[int,int]`"""
+	def __init__(self, x: list|int, y:int=None):
+		self.y = int(y if type(x) == int else x[1])
+		self.x = int(x if type(x) == int else x[0])
+
+	def __str__(self):
+		return str(self.__repr__())
+	def __repr__(self):
+		return (self.x, self.y)
+
+	def __getitem__(self, i: int):
+		if i > 1:
+			raise IndexError("Vec2D has no elements outside of x and y")
+		return self.__repr__()[i]
+
+	def __add__(self, value: 'Vec2D'):
+		return Vec2D(add_pos(self, value))
+	def __sub__(self, value: 'Vec2D'):
+		return Vec2D(add_pos(self, value, int.__sub__))
+	def __eq__(self, value: 'Vec2D') -> bool:
+		value = Vec2D(value)
+		return self.__repr__() == value.__repr__()
+
+	def normalised(self):
+		return Vec2D([i/abs(i) for i in self])
+
+@force_types()
+def correct_position(pos: Vec2D, limits: tuple[int,int]=None):
+	if not limits:
+		limits = main_scene.size
+
+	new_pos = list(map(
+		lambda a,b: b % a if a > 0 else a,
+		list(pos), limits
+	))
+
+	return Vec2D(new_pos)
+
+class txtcolours:
 	"""txtcolours can be used to set an entity's colour, like so:
 	>>> from gemini import Scene, Entity, txtcolours as tc
 	>>> scene = Scene((10,10))
@@ -107,6 +136,3 @@ class txtcolours(enum.Enum):
 	ALT_COLOURS = [ALT_RED, ALT_GREEN, ALT_YELLOW, ALT_BLUE, ALT_PURPLE, ALT_CYAN]
 	INVERTED_COLOURS = [INVERTED_RED, INVERTED_GREEN, INVERTED_YELLOW, INVERTED_BLUE, INVERTED_PURPLE, INVERTED_CYAN]
 	ALL_COLOURS = COLOURS + ALT_COLOURS
-
-print(txtcolours.RED)
-print(txtcolours['RED'])

@@ -1,13 +1,4 @@
-import sys, os, curses
-
-canvas = None
-
-def end_canvas():
-	"""You MUST run this function before your program ends"""
-	curses.nocbreak()
-	canvas.keypad(False)
-	curses.echo()
-	curses.endwin()
+import sys, os
 
 class Input:
 	"""## Input

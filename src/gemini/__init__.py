@@ -1,9 +1,7 @@
 import os
 from time import sleep
-from .utils import correct_position, main_scene, txtcolours, printd, add_pos
+from .utils import correct_position, main_scene, txtcolours, printd, Vec2D, add_pos, force_types
 from .input import Input
-
-# main engine file
 
 # -- Entities --
 
@@ -38,22 +36,24 @@ class Entity:
 		self._fill_char = value
 	@property
 	def pos(self):
-		return tuple(self._pos)
+		return Vec2D(self._pos)
 	@pos.setter
-	def pos(self, value: tuple[int,int]|list[int,int]):
-		if len(value) != 2:
-			raise ValueError("Value should be a tuple of (x,y)")
+	def pos(self, value: Vec2D):
 		if self.parent:
-			self._pos = tuple(correct_position(value, self.parent.size))
+			self._pos = Vec2D(correct_position(value, self.parent.size))
 		else:
-			self._pos = tuple(value)
+			self._pos = Vec2D(value)
 	@property
 	def all_positions(self):
 		return [add_pos(self.pos, (i,j)) for i in range(self.size[0]) for j in range(self.size[1])]
 
-	def __init__(self, pos: tuple[int,int], size: tuple[int,int], parent: 'Scene'=None, auto_render=False, layer: int=0, fill_char="█", colour="", collisions: list[int]|bool=[], hidden=False, move_functions: list=[]):
+	def __init__(self, pos: Vec2D, size: tuple[int,int], parent: 'Scene'=None, auto_render:bool=False, layer: int=0, fill_char:str="█", colour:str="", collisions: list[int]|bool=[], hidden:bool=False, move_functions: list=[]):
 		self._parent: 'Scene' = None
-		self._pos = [0,0]
+		parent = parent if parent else main_scene.main_scene
+		if parent:
+			self.parent = parent
+
+		self._pos = Vec2D(0,0)
 		self.pos = pos
 		self.size = size
 		self._fill_char = fill_char
@@ -63,11 +63,6 @@ class Entity:
 		self.collisions: list = [-1] if collisions == True else [] if type(collisions) == False else collisions
 		self.hidden = hidden
 		self.move_functions: list[function] = move_functions
-
-		parent = parent if parent else main_scene.main_scene
-		if parent:
-			# parent.add_to_scene(self)
-			self.parent = parent
 
 	def __str__(self):
 		return f"Entity(pos={self.pos},size={self.size},fill_char='{self._fill_char}',parent={self.parent})"
@@ -82,10 +77,9 @@ class Entity:
 
 		has_collided = False
 
-		y = y if type(x) == int else x[1]
-		x = x if type(x) == int else x[0]
+		move = Vec2D(x, y)
 
-		if x != 0 or y != 0: # Only use move code if there is something to be moved
+		if move.x != 0 or move.y != 0: # Only use move code if there is something to be moved
 			if run_functions:
 				for func in self.move_functions:
 					func()
@@ -94,33 +88,33 @@ class Entity:
 				prev_hidden = self.hidden
 				self.hidden = True
 
-				x_pol = 1 if x > 0 else -1
-				y_pol = 1 if y > 0 else -1
+				x_pol = 1 if move.x > 0 else -1
+				y_pol = 1 if move.y > 0 else -1
 
 				# Move the entity as much as possible in each direction
 
-				if x != 0:
-					colliding_x = abs(x)
+				if move.x != 0:
+					colliding_x = abs(move.x)
 					for i in range(colliding_x):
 						for wall_y in range(self.size[1]):
-							if self.parent.is_entity_at(add_pos(self.pos, (self.size[0] if x > 0 else -1, wall_y)), layers=self.collisions):
+							if self.parent.is_entity_at(add_pos(self.pos, (self.size[0] if move.x > 0 else -1, wall_y)), layers=self.collisions):
 								colliding_x, has_collided = i, True
-						if colliding_x < abs(x)-1:
+						if colliding_x < abs(move.x)-1:
 							break
-					self.pos = add_pos(self.pos, (colliding_x * x_pol, 0))
+					self.pos += (colliding_x * x_pol, 0)
 				if y != 0:
-					colliding_y = abs(y)
+					colliding_y = abs(move.y)
 					for i in range(colliding_y):
 						for wall_x in range(self.size[0]):
-							if self.parent.is_entity_at(add_pos(self.pos, (wall_x, (self.size[1] if y > 0 else -1))), layers=self.collisions):
+							if self.parent.is_entity_at(add_pos(self.pos, (wall_x, (self.size[1] if move.y > 0 else -1))), layers=self.collisions):
 								colliding_y, has_collided = i, True
-						if colliding_y < abs(y)-1:
+						if colliding_y < abs(move.y)-1:
 							break
-					self.pos = add_pos(self.pos, (0, colliding_y * y_pol))
+					self.pos += (0, colliding_y * y_pol)
 
 				self.hidden = prev_hidden
 			else:
-				self.pos = add_pos(self.pos, (x,y))
+				self.pos += (move.x,move.y)
 
 		if render:
 			self.parent.render()
@@ -158,14 +152,14 @@ class Sprite(Entity):
 	def image(self, value: str):
 		self._image = value
 
-	def __init__(self, pos: tuple, image: str, transparent: bool=True, parent: 'Scene'=None, auto_render=False, layer: int=0, colour: str="", collisions: list=[], hidden=False, move_functions: list=[], extra_characters: list=[]):
+	def __init__(self, pos: Vec2D, image: str, transparent: bool=True, parent: 'Scene'=None, auto_render=False, layer: int=0, colour: str="", collisions: list=[], hidden=False, move_functions: list=[], extra_characters: list=[]):
 		self._image = image
 		self.transparent = transparent
 		self.extra_characters = extra_characters
 
 		size = (len(max(image.split("\n"), key= lambda x: len(x))), image.count("\n") + 1)
 
-		super().__init__(pos, size, parent, auto_render, layer, None, colour, collisions, hidden, move_functions)
+		super().__init__(pos, size, parent, auto_render, layer, "", colour, collisions, hidden, move_functions)
 		del self._fill_char
 
 	def __str__(self):
@@ -192,9 +186,10 @@ class AnimatedSprite(Sprite):
 
 	@property
 	def max_frame(self):
-		"""returns the largest possible frame"""
+		"""returns the index of the largest possible frame"""
 		return len(self.frames)-1
-	def __init__(self, pos: tuple, frames: list, transparent: bool = True, parent: 'Scene' = None, auto_render=False, layer=0, colour: str = "", collisions: list = [], hidden=False, move_functions: list=[], extra_characters: list = []):
+
+	def __init__(self, pos: Vec2D, frames: list, transparent:bool=True, parent:'Scene'=None, auto_render:bool=False, layer:int=0, colour:str="", collisions:list=[], hidden:bool=False, move_functions: list=[], extra_characters: list = []):
 		self.frames = frames
 		self._current_frame = 0
 		self.current_frame
@@ -229,7 +224,7 @@ class Scene:
 	def is_main_scene(self, value):
 		main_scene.main_scene = self if value else None
 
-	def __init__(self, size:tuple, clear_char="░", bg_colour="", children: list[Entity]=[], render_functions: list=[], is_main_scene=False):
+	def __init__(self, size: tuple, clear_char="░", bg_colour="", children: list[Entity]=[], render_functions: list=[], is_main_scene=False):
 		self.size = size
 		self.clear_char = clear_char
 		self.bg_colour = bg_colour
@@ -292,7 +287,7 @@ class Scene:
 					stage[point[1]][point[0]] = f"{entity.colour}{pixel.replace(self._void_char,' ')}{txtcolours.END if entity.colour else ''}"
 
 		if is_display:
-			print(seperator+"\n".join(["".join(row) for row in stage])+"\n") # Render the stage
+			print(seperator+"\n".join(["".join(row) for row in stage])+"\n")
 		if _output:
 			return stage
 
@@ -313,7 +308,3 @@ class Scene:
 		entities: list[Entity] = list(filter(lambda x: x.layer in layers, self.children)) if layers else self.children
 
 		return list(filter(lambda x: pos in x.all_positions, entities))
-
-
-if __name__ == "__main__":
-	print("This is the module file, please use a provided example instead")
