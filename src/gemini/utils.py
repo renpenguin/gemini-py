@@ -86,7 +86,6 @@ class _MainScene:
 	@property
 	def main_scene(self):
 		return self._main_scene
-
 	@main_scene.setter
 	def main_scene(self, value):
 		self._main_scene = value
@@ -104,7 +103,14 @@ def add_pos(pos_a,pos_b, effect=int.__add__, limits: tuple[int, int]=None):
 	return correct_position(map(effect, pos_a, pos_b), limits) if limits else Vec2D.__add__(pos_a, pos_b)
 
 class Vec2D:
-	"""Helper class for positions and sizes. A set of two ints. Can be initalised with `Vec2D(5,4)` or with `Vec2D([5,4])` Can also just be a replacement for `tuple[int,int]`"""
+	"""Helper class for positions and sizes. A set of two ints. Can be initalised with `Vec2D(5,4)` or with `Vec2D([5,4])` Can also just be a replacement for `tuple[int,int]`
+
+	Other examples:
+	>>> Vec2D(5, 2) + Vec2D(4, -1)
+	Vec2D(9, 1)
+	>>> Vec2D(10, 10) - Vec2D(4,1)
+	Vec2D(6, 9)"""
+
 	def __init__(self, x: list|int, y:int=None):
 		self.y = int(y if type(x) == int else x[1])
 		self.x = int(x if type(x) == int else x[0])
