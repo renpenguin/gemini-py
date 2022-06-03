@@ -1,6 +1,6 @@
 import os
 from time import sleep
-from .utils import correct_position, main_scene, txtcolours, printd, Vec2D, add_pos, force_types
+from .utils import correct_position, main_scene, txtcolours, printd, Vec2D, force_types, Axis
 from .input import Input
 
 # -- Entities --
@@ -45,7 +45,7 @@ class Entity:
 			self._pos = Vec2D(value)
 	@property
 	def all_positions(self):
-		return [add_pos(self.pos, (i,j)) for i in range(self.size[0]) for j in range(self.size[1])]
+		return [self.pos + (i,j) for i in range(self.size[0]) for j in range(self.size[1])]
 
 	def __init__(self, pos: Vec2D, size: tuple[int,int], parent: 'Scene'=None, auto_render:bool=False, layer: int=0, fill_char:str="█", colour:str="", collisions: list[int]|bool=[], hidden:bool=False, move_functions: list=[]):
 		self._parent: 'Scene' = None
@@ -79,37 +79,29 @@ class Entity:
 		move = Vec2D(x, y)
 
 		if move.x != 0 or move.y != 0: # Only use move code if there is something to be moved
-			if run_functions:
-				for func in self.move_functions:
-					func()
-
 			if collide:
 				prev_hidden = self.hidden
 				self.hidden = True
 
-				y_pol = 1 if move.y > 0 else -1
+				bake = self.parent.render(False, self.collisions, False)
 
-				# Move the entity as much as possible in each direction
+				def step_collide(axis: Axis, p):
+					if p != 0:
+						colliding = abs(p)
+						polarity = (1 if p > 0 else -1)
+						for j in range(colliding):
+							for wall_p in range(self.size[0 if axis is Axis.Y else 1]):
+								next_pos = axis.vector( (self.size[axis.value] if p > 0 else -1) + j * polarity, wall_p )
+								if self.parent.is_entity_at(self.pos + next_pos, self.collisions, bake):
+									nonlocal has_collided
+									colliding, has_collided = j, True
 
-				if move.x != 0:
-					colliding_x = abs(move.x)
-					for i in range(colliding_x):
-						for wall_y in range(self.size[1]):
-							if self.parent.is_entity_at(add_pos(self.pos, (self.size[0] if move.x > 0 else -1, wall_y)), layers=self.collisions):
-								colliding_x, has_collided = i, True
-						if colliding_x < abs(move.x)-1:
-							break
-					x_pol = 1 if move.x > 0 else -1
-					self.pos += (colliding_x * x_pol, 0)
-				if y != 0:
-					colliding_y = abs(move.y)
-					for i in range(colliding_y):
-						for wall_x in range(self.size[0]):
-							if self.parent.is_entity_at(add_pos(self.pos, (wall_x, (self.size[1] if move.y > 0 else -1))), layers=self.collisions):
-								colliding_y, has_collided = i, True
-						if colliding_y < abs(move.y)-1:
-							break
-					self.pos += (0, colliding_y * y_pol)
+							if colliding < abs(p):
+								break
+						self.pos += axis.vector(colliding * polarity)
+
+				step_collide(Axis.X, move.x)
+				step_collide(Axis.Y, move.y)
 
 				self.hidden = prev_hidden
 			else:
@@ -118,14 +110,11 @@ class Entity:
 		if render:
 			self.parent.render()
 
-		return 1 if has_collided else 0
+		if run_functions and not has_collided:
+			for func in self.move_functions:
+				func()
 
-	def show(self):
-		"""Make the sprite shown"""
-		self.hidden = False
-	def hide(self):
-		"""Make the sprite hidden"""
-		self.hidden = True
+		return 1 if has_collided else 0
 
 class Sprite(Entity):
 	"""## Sprite
@@ -151,14 +140,14 @@ class Sprite(Entity):
 	def image(self, value: str):
 		self._image = value
 
-	def __init__(self, pos: Vec2D, image: str, transparent: bool=True, parent: 'Scene'=None, auto_render=False, layer: int=0, colour: str="", collisions: list=[], hidden=False, move_functions: list=[], extra_characters: list=[]):
-		self._image = image
+	def __init__(self, pos: Vec2D, image: str, transparent: bool=True, extra_characters: list=[], *args, **kwargs):
+		self._image = image.strip("\n")
 		self.transparent = transparent
 		self.extra_characters = extra_characters
 
 		size = (len(max(image.split("\n"), key= lambda x: len(x))), image.count("\n") + 1)
 
-		super().__init__(pos, size, parent, auto_render, layer, "", colour, collisions, hidden, move_functions)
+		super().__init__(pos, size, *args, **kwargs)
 		del self._fill_char
 
 	def __str__(self):
@@ -166,33 +155,31 @@ class Sprite(Entity):
 
 class AnimatedSprite(Sprite):
 	"""## AnimatedSprite
-	The AnimatedSpite object works the same way as the regular Sprite, but accepts a list of images instead of only one, and can be set which to show with the `current_frame` value"""
+	The AnimatedSpite object works the same way as the Sprite class, but accepts a list of images instead of only one, and can be set which to show with the `current_frame` value. The `image` property will now return the current frame as an image
+
+	Example: ```
+	from gemini import Scene, AnimatedSprite
+	scene = Scene((10,10))
+	new_entity = AnimatedSprite((5,5), ["O","C","<","C"], parent)
+	new_entities.move_functions.append(new_entity.next_frame,)
+	```"""
 
 	@property
-	def current_frame(self, image=False):
+	def current_frame(self):
 		"""Returns the index of the current frame, to get a picture of the actual frame use self.image.
 
-		When setting the current_frame, the index will always autocorrect itself to be within the fram list's range"""
+		When setting the current_frame, the index will always autocorrect itself to be within the fram list's range."""
 		return self._current_frame
 	@current_frame.setter
 	def current_frame(self, value: int):
-		self._current_frame = value
-		if value < 0:
-			self._current_frame = len(self.frames)-1
-		elif value > len(self.frames)-1:
-			self._current_frame = 0
+		self._current_frame = value % len(self.frames)
 		self.image = self.frames[self._current_frame]
 
-	@property
-	def max_frame(self):
-		"""returns the index of the largest possible frame"""
-		return len(self.frames)-1
-
-	def __init__(self, pos: Vec2D, frames: list, transparent:bool=True, parent:'Scene'=None, auto_render:bool=False, layer:int=0, colour:str="", collisions:list=[], hidden:bool=False, move_functions: list=[], extra_characters: list = []):
-		self.frames = frames
+	def __init__(self, pos: Vec2D, frames: list, *args, **kwargs):
+		self.frames = [frame.strip("\n") for frame in frames]
 		self._current_frame = 0
-		self.current_frame
-		super().__init__(pos, frames[0], transparent, parent, auto_render, layer, colour, collisions, hidden, move_functions, extra_characters)
+
+		super().__init__(pos, frames[0], *args, **kwargs)
 
 	def next_frame(self):
 		self.current_frame += 1
@@ -236,12 +223,20 @@ class Scene:
 	def __str__(self):
 		return f"Scene(size={self.size},clear_char='{self.clear_char}',is_main_scene={self.is_main_scene})"
 
+	def _render_stage(self, stage: list[list], show_coord_numbers=False):
+		"""Return a baked scene, ready for printing. This will take your grid of strings and render it. You can also set `show_coord_numbers=True` to print your scene with coordinate numbers for debugging purposes"""
+		if show_coord_numbers:
+			for i, c in enumerate(stage):
+				c.insert(0, str(i)[-1:])
+			stage.insert( 0, [' '] + [ str(i)[-1:] for i in range(len(stage[0])-1) ] )
+		return "\n".join(["".join(row) for row in stage])+"\n"
+
 	def add_to_scene(self, new_entity: Entity):
 		"""Add an entity to the scene. This can be used instead of directly defining the entity's parent, or if you want to move the entity between different scenes"""
 		self.children.append(new_entity)
 		new_entity._parent = self
 
-	def render(self, is_display=True, layers: list=None, run_functions=True, _output=True):
+	def render(self, is_display=True, layers: list=None, run_functions=True, *, _output=True, show_coord_numbers=False):
 		"""This will print out all the entities that are part of the scene with their current settings. The character `¶` can be used as a whitespace in Sprites, as regular ` ` characters are considered transparent, unless the transparent parameter is disabled, in which case all whitespaces are rendered over the background.
 
 		When rendering an animation, make sure to put a short pause in between frames to set your fps. `gemini.sleep(0.1)` will mean a new fram every 0.1 seconds, aka 10 FPS
@@ -249,6 +244,8 @@ class Scene:
 		If your scene is stuttering while animating, make sure you're only rendering the scene once per frame
 
 		If the `layers` parameter is set, only entities on those layers will be rendered. Entities will also be rendered in the order of layers, with the smallest layer first
+
+		For debugging, you can set `show_coord_numbers=True` to more see coordinate numbers around the border of your rendered scene. These numbers will not show in the render function's raw output regardless
 		"""
 		if run_functions:
 			for function in self.render_functions:
@@ -256,8 +253,7 @@ class Scene:
 
 		seperator = "\n" * (os.get_terminal_size().lines - self.size[1]) if self.use_seperator else "" # Create a seperator to put above display so that you can only see one rendered scene at a time
 		stage = [[self.get_background()] * self.size[0] for _ in range(self.size[1])] # Create the render 'stage'
-
-		entity_list = list(filter(lambda x: x.layer in layers, self.children)) if layers else self.children # Get a list of the entities the user wants to render
+		entity_list = list(filter(lambda x: x.layer in layers, self.children)) if layers and layers != [-1] else self.children # Get a list of the entities the user wants to render
 		for entity in sorted(entity_list, key=lambda x: x.layer, reverse=True):
 			# Code to manually handle ascii characters that can't be monospaced
 			extra_length = 0
@@ -286,7 +282,7 @@ class Scene:
 					stage[point[1]][point[0]] = f"{entity.colour}{pixel.replace(self._void_char,' ')}{txtcolours.END if entity.colour else ''}"
 
 		if is_display:
-			print(seperator+"\n".join(["".join(row) for row in stage])+"\n")
+			print(seperator+self._render_stage(stage, show_coord_numbers))
 		if _output:
 			return stage
 
@@ -294,16 +290,18 @@ class Scene:
 		"""Return the background character with colours included"""
 		return f"{self.bg_colour}{self.clear_char}{txtcolours.END if self.bg_colour != '' else ''}"
 
-	def is_entity_at(self, pos: tuple, layers: list=[-1]):
+	def is_entity_at(self, pos: tuple, layers: list=[-1], bake=None):
 		"""Check for any object at a specific position, can be sorted by layers. `-1` in the layers list means to collide with all layers"""
 		layers = layers if isinstance(layers, list) else [layers]
-		render = self.render(is_display=False, layers=None if -1 in layers else layers, run_functions=False)
+		render = bake or self.render(is_display=False, layers=None if -1 in layers else layers, run_functions=False)
 		pos = correct_position(pos, self.size)
 		coordinate = render[pos[1]][pos[0]]
 		return coordinate != self.get_background()
 
 	def get_entities_at(self, pos: tuple[int, int], layers: list[int]=[]) -> list[Entity]:
+		"""Return all entities found at the chosen position, can be filtered by layer"""
 		layers = layers if isinstance(layers, list) else [layers]
+		layers = layers if layers != [-1] else []
 		entities: list[Entity] = list(filter(lambda x: x.layer in layers, self.children)) if layers else self.children
 
 		return list(filter(lambda x: pos in x.all_positions, entities))

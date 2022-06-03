@@ -1,5 +1,46 @@
 import sys, time, enum
 
+class MorphDict:
+	"""## MorphDict
+	A dictionary that can have multiple keys for one value"""
+	def __init__(self, *items: dict|list[tuple]):
+		if type(items) is dict:
+			items = dict.items()
+
+		self.items = [([keys] if isinstance(keys, str|int) else list(keys), value) for keys, value in items]
+	def __repr__(self):
+		return self.items
+	def __str__(self):
+		return f"{self.items}"
+
+	def keys(self):
+		return [i[0] for i in self.items]
+	def all_keys(self):
+		return sum(self.keys(), start=[])
+	def values(self):
+		return [i[1] for i in self.items]
+
+	def __getitem__(self, i):
+		return list(filter(lambda x: i in x[0], self.items))[0][1]
+	def __setitem__(self, i, value):
+		list(filter(lambda x: i in x[0], self.items))[0][1] = value
+
+	def append(self, keys, value):
+		self.items.append(([keys] if isinstance(keys, str|int) else list(keys), value))
+
+class Axis(enum.Enum):
+	"""Helper class for the move function. """
+	X = 0
+	Y = 1
+
+	def vector(self, value, seconday_value=0) -> tuple: # My dad helped me with this :D
+		"""Useful for movements in single directions"""
+		match self:
+			case Axis.X:
+				return Vec2D(value, seconday_value)
+			case Axis.Y:
+				return Vec2D(seconday_value, value)
+
 def printd(*texts: str, delay=0.01, skip_delay_characters=[" "]):
 	"""Delayed print function. A simple print function that can be used in place of the usual print to have your text print out character by character, like in text adventure games!"""
 	for i in "".join(texts):
@@ -60,8 +101,7 @@ main_scene = _MainScene()
 # Vec2D
 
 def add_pos(pos_a,pos_b, effect=int.__add__, limits: tuple[int, int]=None):
-	r = map(effect, pos_a, pos_b)
-	return correct_position(r, limits) if limits else Vec2D(list(r))
+	return correct_position(map(effect, pos_a, pos_b), limits) if limits else Vec2D.__add__(pos_a, pos_b)
 
 class Vec2D:
 	"""Helper class for positions and sizes. A set of two ints. Can be initalised with `Vec2D(5,4)` or with `Vec2D([5,4])` Can also just be a replacement for `tuple[int,int]`"""
@@ -73,16 +113,14 @@ class Vec2D:
 		return str(self.__repr__())
 	def __repr__(self):
 		return (self.x, self.y)
-
 	def __getitem__(self, i: int):
 		if i > 1:
 			raise IndexError("Vec2D has no elements outside of x and y")
 		return self.__repr__()[i]
-
 	def __add__(self, value: 'Vec2D'):
-		return Vec2D(add_pos(self, value))
+		return Vec2D(list(map(int.__add__, self, value)))
 	def __sub__(self, value: 'Vec2D'):
-		return Vec2D(add_pos(self, value, int.__sub__))
+		return Vec2D(list(map(int.__sub__, self, value)))
 	def __eq__(self, value: 'Vec2D') -> bool:
 		return self.__repr__() == Vec2D(value).__repr__()
 

@@ -1,4 +1,5 @@
 import sys, os
+from .utils import Vec2D, MorphDict
 
 class Input:
 	"""## Input
@@ -13,7 +14,12 @@ class Input:
 	>>> 	input = Input().pressed_key
 	>>> 	# Other processes"""
 	_arrow_keys = {"A": "up","B": "down","C": "right","D": "left"}
-	direction_keys = {"w":(0,-1), "a":(-1,0), "s":(0,1), "d":(1,0)}
+	direction_keys = MorphDict(
+		(["w","up_arrow"],Vec2D(0,-1)),
+		(["a","left_arrow"],Vec2D(-1,0)),
+		(["s","down_arrow"],Vec2D(0,1)),
+		(["d","right_arrow"],Vec2D(1,0))
+	)
 
 	def __init__(self):
 		self.pressed_key = self.get_key_press(False)
