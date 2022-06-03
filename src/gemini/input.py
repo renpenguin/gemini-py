@@ -1,4 +1,4 @@
-import sys, os
+import contextlib, sys, os
 from .utils import Vec2D, MorphDict
 
 class Input:
@@ -45,15 +45,13 @@ class Input:
 		try:
 			if is_wait:
 				while True:
-					try:
+					with contextlib.suppress(IOError):
 						if c := sys.stdin.read(1):
 							return self.string_key(c)
-					except IOError: pass
 			else:
-				try:
+				with contextlib.suppress(IOError):
 					c = sys.stdin.read(1)
 					return self.string_key(c)
-				except IOError: pass
 		finally:
 			termios.tcsetattr(fd, termios.TCSAFLUSH, oldterm)
 			fcntl.fcntl(fd, fcntl.F_SETFL, oldflags)
