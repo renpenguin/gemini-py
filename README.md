@@ -14,10 +14,10 @@ Gemini Engine can be installed using pip:
 python3 -m pip install -U gemini-engine
 ```
 
-If you want to run the latest version of the code, you can install from git:
+If you want to run the latest version of the code, you can install from github:
 
 ```
-python3 -m pip install -U git+https://github.com/redpenguinyt/GeminiEngine.git
+python3 -m pip install -U git+https://github.com/redpenguinyt/GeminiEngine.git@latest
 ```
 
 Now that you have installed the library, instance a Scene and an Entity, then render the scene
@@ -26,7 +26,7 @@ Now that you have installed the library, instance a Scene and an Entity, then re
 from gemini import Scene, Entity
 
 scene = Scene(size=(20,10))
-entity = Entity(pos=(5,5),size=(2,1),parent=scene)
+entity = Entity(pos=(5,5), size=(2,1), parent=scene)
 
 scene.render()
 ```
