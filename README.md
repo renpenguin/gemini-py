@@ -1,6 +1,7 @@
 # Gemini Engine
 
-[![PyPI version](https://img.shields.io/pypi/v/gemini-engine?logo=pypi)](https://pypi.org/project/gemini-engine) ![Stars](https://img.shields.io/github/stars/redpenguinyt/GeminiEngine?color=yellow) ![Last commit](https://img.shields.io/github/last-commit/redpenguinyt/geminiengine) ![Code size](https://img.shields.io/github/languages/code-size/redpenguinyt/GeminiEngine) [![Downloads](https://img.shields.io/pypi/dm/gemini-engine)](https://pypi.org/project/gemini-engine) [![Issues](https://img.shields.io/github/issues/redpenguinyt/geminiengine)](https://github.com/redpenguinyt/GeminiEngine/issues)
+[![PyPI version](https://img.shields.io/pypi/v/gemini-engine?logo=pypi)](https://pypi.org/project/gemini-engine)
+![Stars](https://img.shields.io/github/stars/redpenguinyt/GeminiEngine?color=yellow) ![Last commit](https://img.shields.io/github/last-commit/redpenguinyt/geminiengine) ![Code size](https://img.shields.io/github/languages/code-size/redpenguinyt/GeminiEngine) [![Downloads](https://img.shields.io/pypi/dm/gemini-engine)](https://pypi.org/project/gemini-engine) [![Issues](https://img.shields.io/github/issues/redpenguinyt/geminiengine)](https://github.com/redpenguinyt/GeminiEngine/issues)
 
 Gemini Engine is a monospace 2D ASCII rendering engine. It includes collisions, layers, inputs and the ability to handle solid objects as well as ascii art. Examples can be found on the [GeminiExamples github](https://github.com/redpenguinyt/GeminiExamples)
 
