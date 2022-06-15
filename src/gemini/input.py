@@ -1,4 +1,4 @@
-import sys, os
+import contextlib, sys, os
 from .utils import Vec2D, MorphDict
 
 class Input:
@@ -12,12 +12,19 @@ class Input:
 	>>> while True:
 	>>> 	sleep(0.1)
 	>>> 	input = Input().pressed_key
-	>>> 	# Other processes"""
+	>>> 	# Other processes
+
+	you can also compare your input to `Input.direction_keys` to get a vector, so you can do this!
+	>>> my_input = Input()
+	>>> entity.move(my_entity.get_key_press())
+
+	and the Entity will move in your chosen direction!
+	"""
 	_arrow_keys = {"A": "up","B": "down","C": "right","D": "left"}
 	direction_keys = MorphDict(
 		(["w","up_arrow"],Vec2D(0,-1)),
-		(["a","left_arrow"],Vec2D(-1,0)),
 		(["s","down_arrow"],Vec2D(0,1)),
+		(["a","left_arrow"],Vec2D(-1,0)),
 		(["d","right_arrow"],Vec2D(1,0))
 	)
 
@@ -45,15 +52,13 @@ class Input:
 		try:
 			if is_wait:
 				while True:
-					try:
+					with contextlib.suppress(IOError):
 						if c := sys.stdin.read(1):
 							return self.string_key(c)
-					except IOError: pass
 			else:
-				try:
+				with contextlib.suppress(IOError):
 					c = sys.stdin.read(1)
 					return self.string_key(c)
-				except IOError: pass
 		finally:
 			termios.tcsetattr(fd, termios.TCSAFLUSH, oldterm)
 			fcntl.fcntl(fd, fcntl.F_SETFL, oldflags)

@@ -50,16 +50,24 @@ def printd(*texts: str, delay=0.01, skip_delay_characters=[" "]):
 			time.sleep(delay)
 	print()
 
+def sleep(secs: float):
+	"""Delay execution for a given amount seconds"""
+	time.sleep(secs)
+
 def parametrized(dec):
-    def layer(*args, **kwargs):
-        def repl(f):
-            return dec(f, *args, **kwargs)
-        return repl
-    return layer
+	"""Parameters for wrapper functions, like
+	`@yourwrapper(param=True)`"""
+	def layer(*args, **kwargs):
+		def repl(f):
+			return dec(f, *args, **kwargs)
+		return repl
+	return layer
 
 @parametrized
 def force_types(func, skip=0, ignore_types=[]):
-	"""`*args` should be fully hinted. Class functions (starting with self parameter) do not yet work"""
+	"""Force function types
+
+	`*args` should be fully hinted. Class functions (starting with self parameter) do not yet work"""
 	def wraps(*args, **kwargs):
 		args = list(args)
 		keys_list = list(func.__annotations__.keys())
@@ -86,33 +94,41 @@ class _MainScene:
 	@property
 	def main_scene(self):
 		return self._main_scene
-
 	@main_scene.setter
 	def main_scene(self, value):
 		self._main_scene = value
 
-	def __str__(self) -> str:
-		return str(self.main_scene)
-
 	def __repr__(self) -> str:
 		return self.main_scene
+	def __str__(self) -> str:
+		return str(self.main_scene)
 main_scene = _MainScene()
 
 # Vec2D
 
 def add_pos(pos_a,pos_b, effect=int.__add__, limits: tuple[int, int]=None):
+	"""Add two vectors together.
+
+	WARNING: This functions is deprecated, and will be removed in a future release"""
 	return correct_position(map(effect, pos_a, pos_b), limits) if limits else Vec2D.__add__(pos_a, pos_b)
 
 class Vec2D:
-	"""Helper class for positions and sizes. A set of two ints. Can be initalised with `Vec2D(5,4)` or with `Vec2D([5,4])` Can also just be a replacement for `tuple[int,int]`"""
-	def __init__(self, x: list|int, y:int=None):
-		self.y = int(y if type(x) == int else x[1])
-		self.x = int(x if type(x) == int else x[0])
+	"""Helper class for positions and sizes. A set of two ints. Can be initalised with `Vec2D(5,4)` or with `Vec2D([5,4])` Can also just be a replacement for `tuple[int,int]`
 
-	def __str__(self):
-		return str(self.__repr__())
+	Other examples:
+	>>> Vec2D(5, 2) + Vec2D(4, -1)
+	Vec2D(9, 1)
+	>>> Vec2D(10, 10) - Vec2D(4,1)
+	Vec2D(6, 9)"""
+
+	def __init__(self, x: list|int, y:int=None):
+		self.y = int(x[1] if isinstance(x, list|tuple|Vec2D) else y)
+		self.x = int(x[0] if isinstance(x, list|tuple|Vec2D) else x)
+
 	def __repr__(self):
 		return (self.x, self.y)
+	def __str__(self):
+		return str(self.__repr__())
 	def __getitem__(self, i: int):
 		if i > 1:
 			raise IndexError("Vec2D has no elements outside of x and y")
@@ -121,6 +137,10 @@ class Vec2D:
 		return Vec2D(list(map(int.__add__, self, value)))
 	def __sub__(self, value: 'Vec2D'):
 		return Vec2D(list(map(int.__sub__, self, value)))
+	def __mul__(self, value: int):
+		return Vec2D(self.x*value,self.y*value)
+	def __truediv__(self, value: int):
+		return Vec2D(self.x/value,self.y/value)
 	def __eq__(self, value: 'Vec2D') -> bool:
 		return self.__repr__() == Vec2D(value).__repr__()
 
@@ -128,7 +148,8 @@ class Vec2D:
 		return Vec2D([i/abs(i) for i in self])
 
 @force_types()
-def correct_position(pos: Vec2D, limits: tuple[int,int]=None):
+def correct_position(pos: Vec2D, limits: Vec2D=None):
+	"""Correct a position, if the position is outside the limits it will be looped back to the other side"""
 	if not limits:
 		limits = main_scene.size
 
@@ -145,7 +166,9 @@ class txtcolours:
 	>>> scene = Scene((10,10))
 	>>> entity1 = Entity(pos=(3,1),size=(2,1),colour=tc.RED)
 
-	this will make entity1 red"""
+	this will make entity1 red.
+
+	Important note: for windows users please use colorama, as `txtcolours` only works with ANSI terminals. You can use `colorama.Fore.RED` instead of `txtcolours.RED`!"""
 
 	def txt_mod(self):
 		return f'\x1b[{self}m'

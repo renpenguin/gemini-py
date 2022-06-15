@@ -3,5 +3,4 @@
 Gemini.code-workspace
 dist/*
 src/gemini_engine.egg-info/*
-quick_test.py
 *.DS_Store
