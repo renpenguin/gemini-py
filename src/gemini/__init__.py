@@ -1,5 +1,5 @@
 import os
-from .utils import correct_position, main_scene, txtcolours, printd, Vec2D, force_types, sleep
+from .utils import main_scene, txtcolours, printd, Vec2D, force_types, sleep
 from .input import Input
 from .camera import Camera
 from . import utils
@@ -40,13 +40,10 @@ class Entity:
 		return Vec2D(self._pos)
 	@pos.setter
 	def pos(self, value: Vec2D):
-		if self.parent:
-			self._pos = Vec2D(correct_position(value, self.parent.size))
-		else:
-			self._pos = Vec2D(value)
+		self._pos = Vec2D(value) % self.parent.size if self.parent else Vec2D(value)
 	@property
 	def all_positions(self):
-		return [correct_position(self.pos + (i,j), self.parent.size) for i in range(self.size[0]) for j in range(self.size[1])]
+		return [((self.pos + (i,j)) % self.parent.size) for i in range(self.size[0]) for j in range(self.size[1])]
 
 	def __init__(self, pos: Vec2D, size: Vec2D, parent: 'Scene'=None, auto_render:bool=False, layer: int=0, fill_char:str="█", colour:str="", collisions: list[int]|bool=[], hidden:bool=False, move_functions: list=[]):
 		self._parent: 'Scene' = None
@@ -131,7 +128,7 @@ class Sprite(Entity):
 
 	This makes it easy to put existing ascii art into whatever you're making, and move it around!
 
-	In the event that a single character takes up two spaces (e.g. ¯\_(ツ)_/¯), you can use the extra_characters parameter, with each index of the list corresponding to the line with the extra character. For instance with a sprite with the image `¯\_(ツ)_/¯`, you would set `extra_characters=[1]`
+	In the event that a single character takes up two spaces (e.g. ¯\_(ツ)_/¯), you can use the `extra_characters` parameter, with each index of the list corresponding to the line with the extra character. For instance with a sprite with the image `¯\_(ツ)_/¯`, you would set `extra_characters=[1]`
 	"""
 
 	_image = ""
@@ -154,12 +151,15 @@ class Sprite(Entity):
 		return '\n'.join(render_image)
 	@property
 	def all_positions(self):
-		raw_positions = [
-			(i,j) for i in range(self.size[0]) for j in range(self.size[1])
-		]
+		raw_positions = []
+		for j in range(self.size[1]):
+			length = self.size[0] + (
+				self.extra_characters[j] if len(self.extra_characters) > j else 0
+			)
+			raw_positions.extend([(i,j) for i in range(length)])
 		return [
-			self.pos + pos for pos in raw_positions
-			if self.get_pixel(pos) != " "
+			(self.pos + pos) % self.parent.size for pos in raw_positions
+			if self.get_pixel(pos) != " " or not self.transparent
 		]
 
 	def __init__(self, pos: Vec2D, image: str, transparent: bool=True, extra_characters: list=[], *args, **kwargs):
@@ -243,14 +243,17 @@ class Scene:
 		return f"{self.bg_colour}{self.clear_char}{txtcolours.END if self.bg_colour != '' else ''}"
 
 	def __init__(self, size: Vec2D, clear_char="░", bg_colour="", children: list[Entity]=[], render_functions: list=[], is_main_scene=False):
-		self.size = size
+		self.size = Vec2D(size)
 		self.clear_char = clear_char
 		self.bg_colour = bg_colour
-		self.children: list[Entity] = children[:]
+		self.children: list[Entity] = []
 		self.render_functions: list[function] = render_functions
 
 		if is_main_scene:
 			self.is_main_scene = True
+
+		for child in children[:]:
+			self.add_to_scene(child)
 
 	def __str__(self):
 		return f"Scene(size={self.size},clear_char='{self.clear_char}',is_main_scene={self.is_main_scene})"
@@ -296,18 +299,12 @@ class Scene:
 		stage = [[self.background_tile] * self.size[0] for _ in range(self.size[1])] # Create the render 'stage'
 		entity_list = list(filter(lambda x: x.layer in layers, self.children)) if layers and layers != [-1] else self.children # Get a list of the entities the user wants to render
 		for entity in sorted(entity_list, key=lambda x: x.layer, reverse=True):
-			extra_length = 0
-			if isinstance(entity, Sprite) and entity.extra_characters:
-				extra_length = max(entity.extra_characters)
 			# Add each pixel of an entity to the stage
-			for x in range(entity.size[0]+extra_length):
-				for y in range(entity.size[1]):
-					displacement = Vec2D(x, y)
-					pixel = entity.get_pixel(displacement)
-					if pixel == " " and hasattr(entity, "transparent") and entity.transparent:
-						continue
-					point = correct_position(entity.pos + displacement, self.size)
-					stage[point[1]][point[0]] = f"{entity.colour}{pixel.replace(self._void_char,' ')}{txtcolours.END if entity.colour else ''}"
+			for position in entity.all_positions:
+				pixel = entity.get_pixel(
+					(position - entity.pos) % self.size
+				).replace(self._void_char,' ')
+				stage[position[1]][position[0]] = f"{entity.colour}{pixel}{txtcolours.END if entity.colour else ''}"
 
 		if is_display:
 			print(
@@ -321,7 +318,7 @@ class Scene:
 		"""Check for any object at a specific position, can be sorted by layers. `-1` in the layers list means to collide with all layers"""
 		layers = layers if isinstance(layers, list) else [layers]
 		render = bake or self.render(is_display=False, layers=None if -1 in layers else layers, run_functions=False)
-		pos = correct_position(pos, self.size)
+		pos = Vec2D(pos) % self.size
 		coordinate = render[pos[1]][pos[0]]
 		return coordinate != self.background_tile
 

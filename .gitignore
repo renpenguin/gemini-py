@@ -4,3 +4,4 @@ Gemini.code-workspace
 dist/*
 src/gemini_engine.egg-info/*
 *.DS_Store
+setup.sh
