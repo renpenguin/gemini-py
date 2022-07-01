@@ -26,7 +26,13 @@ class Camera:
 
 		if not scene:
 			scene = utils.main_scene.main_scene
+		if focus_object:
+			scene = self.focus_object.parent
 		self.scene = scene
+
+	def __str__(self) -> str:
+		pos = f"focus_object={self.focus_object}" if self.focus_object else f"pos={self.pos}"
+		return f"Camera({pos}, size={self.size})"
 
 	def render(self, is_display=True, *args, _output=True, show_coord_numbers=False, use_separator=None, **kwargs):
 		"""Render a scene through a camera. All `Scene.render` parameters can be used"""

@@ -106,12 +106,6 @@ main_scene = _MainScene()
 
 # Vec2D
 
-def add_pos(pos_a,pos_b, effect=int.__add__, limits: tuple[int, int]=None):
-	"""Add two vectors together.
-
-	WARNING: This functions is deprecated, and will be removed in a future release"""
-	return correct_position(map(effect, pos_a, pos_b), limits) if limits else Vec2D.__add__(pos_a, pos_b)
-
 class Vec2D:
 	"""Helper class for positions and sizes. A set of two ints. Can be initalised with `Vec2D(5,4)` or with `Vec2D([5,4])` Can also just be a replacement for `tuple[int,int]`
 
@@ -135,30 +129,25 @@ class Vec2D:
 		return self.__repr__()[i]
 	def __add__(self, value: 'Vec2D'):
 		return Vec2D(list(map(int.__add__, self, value)))
+	__radd__ = __add__
 	def __sub__(self, value: 'Vec2D'):
 		return Vec2D(list(map(int.__sub__, self, value)))
+	__rsub__ = __sub__
 	def __mul__(self, value: int):
 		return Vec2D(self.x*value,self.y*value)
+	__rmul__ = __mul__
 	def __truediv__(self, value: int):
 		return Vec2D(self.x/value,self.y/value)
+	def __mod__(self, limits: 'Vec2D'):
+		return Vec2D(list(map(
+			lambda x, y: x%y if x >= 0 else (y + x)%y,
+			self, limits
+		)))
 	def __eq__(self, value: 'Vec2D') -> bool:
 		return self.__repr__() == Vec2D(value).__repr__()
 
 	def normalised(self):
 		return Vec2D([i/abs(i) for i in self])
-
-@force_types()
-def correct_position(pos: Vec2D, limits: Vec2D=None):
-	"""Correct a position, if the position is outside the limits it will be looped back to the other side"""
-	if not limits:
-		limits = main_scene.size
-
-	new_pos = list(map(
-		lambda a,b: b % a if a > 0 else a,
-		list(pos), limits
-	))
-
-	return Vec2D(new_pos)
 
 class txtcolours:
 	"""txtcolours can be used to set an entity's colour, like so:
@@ -170,8 +159,8 @@ class txtcolours:
 
 	Important note: for windows users please use colorama, as `txtcolours` only works with ANSI terminals. You can use `colorama.Fore.RED` instead of `txtcolours.RED`!"""
 
-	def txt_mod(self):
-		return f'\x1b[{self}m'
+	def txt_mod(num):
+		return f'\x1b[{num}m'
 
 	END = txt_mod(0)
 	BOLD = txt_mod(1)
