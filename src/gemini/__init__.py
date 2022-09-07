@@ -31,7 +31,7 @@ class Entity:
 
 	@property
 	def fill_char(self):
-		return self.parent.background_tile if self.hidden else self._fill_char
+		return self._fill_char if self.visible else self.parent.background_tile
 	@fill_char.setter
 	def fill_char(self, value: str):
 		self._fill_char = value
@@ -41,11 +41,14 @@ class Entity:
 	@pos.setter
 	def pos(self, value: Vec2D):
 		self._pos = Vec2D(value) % self.parent.size if self.parent else Vec2D(value)
+	@pos.deleter
+	def pos(self):
+		del self._pos
 	@property
 	def all_positions(self):
 		return [((self.pos + (i,j)) % self.parent.size) for i in range(self.size[0]) for j in range(self.size[1])]
 
-	def __init__(self, pos: Vec2D, size: Vec2D, parent: 'Scene'=None, auto_render:bool=False, layer: int=0, fill_char:str="█", colour:str="", collisions: list[int]|bool=[], hidden:bool=False, move_functions: list=[]):
+	def __init__(self, pos: Vec2D, size: Vec2D, parent: 'Scene'=None, auto_render:bool=False, layer: int=0, fill_char:str="█", colour:str="", collisions: list[int]|bool=[], visible:bool=True, move_functions: list=[]):
 		self._parent: 'Scene' = None
 		if parent := parent or main_scene.main_scene:
 			self.parent = parent
@@ -53,7 +56,7 @@ class Entity:
 		self._pos = Vec2D(0,0)
 		self.pos, self.size, self.fill_char = pos, Vec2D(size), fill_char
 		self.colour, self.layer = colour, layer
-		self.auto_render, self.hidden = auto_render, hidden
+		self.auto_render, self.visible = auto_render, visible
 		self.collisions: list = [-1] if collisions == True else [] if collisions == False else collisions
 		self.move_functions: list[function] = move_functions
 
@@ -75,8 +78,8 @@ class Entity:
 			if collide is None:
 				collide = self.collisions
 			if collide:
-				prev_hidden = self.hidden
-				self.hidden = True
+				prev_visible = self.visible
+				self.visible = False
 
 				bake = self.parent.render(False, self.collisions, False)
 
@@ -99,7 +102,7 @@ class Entity:
 				step_collide(utils.Axis.X, move.x)
 				step_collide(utils.Axis.Y, move.y)
 
-				self.hidden = prev_hidden
+				self.visible = prev_visible
 			else:
 				self.pos += move
 
@@ -114,6 +117,72 @@ class Entity:
 
 	def get_pixel(self, pos: Vec2D) -> str:
 		return self.fill_char
+
+class Point(Entity):
+	"""## Point
+	An Instance of `Entity` with size (1,1). Helpful for temporary points in renders, simply add `gemini.Point.clear_points(scene)` to `scene.render_functions` (`scene` being your Scene instance)"""
+
+	@property
+	def all_positions(self):
+		return [self.pos]
+
+	def __init__(self, pos: Vec2D, fill_char: str = "█", parent: 'Scene' = None, layer: int = 0, colour: str = "",visible: bool = True,):
+		super().__init__(pos, (1,1), parent, False, layer, fill_char, colour, [], visible, [])
+
+	def __str__(self):
+		return f"Point(pos={self.pos},fill_char='{self._fill_char}')"
+
+class Line(Entity):
+	"""## Line
+	An object to handle automatic generation of lines. Accepts a `pos1` and a `pos2` variable. Inherits from `BaseEntity`. Lines are generated using Bresenham's line algorithm
+	"""
+
+	@property
+	def pos0(self):
+		return Vec2D(self._pos0)
+	@pos0.setter
+	def pos0(self, value: Vec2D):
+		self._pos0 = Vec2D(value) % self.parent.size if self.parent else Vec2D(value)
+
+	@property
+	def pos1(self):
+		return Vec2D(self._pos1)
+	@pos1.setter
+	def pos1(self, value: Vec2D):
+		self._pos1 = Vec2D(value) % self.parent.size if self.parent else Vec2D(value)
+
+	@property
+	def all_positions(self):
+		x0, y0 = self.pos0
+		x1, y1 = self.pos1
+		positions = []
+		dx = abs(x1 - x0)
+		sx = 1 if x0 < x1 else -1
+		dy = -abs(y1 - y0)
+		sy = 1 if y0 < y1 else -1
+		error = dx + dy
+
+		while True:
+			positions.append(Vec2D(x0, y0))
+			e2 = error * 2
+			if e2 >= dy:
+				if x0 == x1: break
+				error += dy
+				x0 += sx
+			if e2 <= dx:
+				if y0 == y1: break
+				error += dx
+				y0 += sy
+
+		return positions
+
+	def __init__(self, pos0: Vec2D, pos1: Vec2D, parent: 'Scene' = None, layer: int = 0, fill_char: str = "█", colour: str = "", visible: bool = True):
+		super().__init__((0,0), (0,0), parent, False, layer, fill_char, colour, [], visible, None)
+		self.pos0 = pos0
+		self.pos1 = pos1
+
+	def __str__(self):
+		return f"Line(pos0={self.pos0},pos1={self.pos1},fill_char='{self._fill_char}')"
 
 class Sprite(Entity):
 	"""## Sprite
@@ -131,12 +200,10 @@ class Sprite(Entity):
 	In the event that a single character takes up two spaces (e.g. ¯\_(ツ)_/¯), you can use the `extra_characters` parameter, with each index of the list corresponding to the line with the extra character. For instance with a sprite with the image `¯\_(ツ)_/¯`, you would set `extra_characters=[1]`
 	"""
 
-	_image = ""
-
 	@property
 	def image(self):
 		"""This will return nothing if the sprite is hidden, to always get the raw image"""
-		return " \n"*self.size[1] if self.hidden else self._image
+		return self._image if self.visible else " \n"*self.size[1]
 	@image.setter
 	def image(self, value: str):
 		self._image = value
@@ -258,6 +325,16 @@ class Scene:
 	def __str__(self):
 		return f"Scene(size={self.size},clear_char='{self.clear_char}',is_main_scene={self.is_main_scene})"
 
+	def add_to_scene(self, new_entity: Entity):
+		"""Add an entity to the scene. This can be used instead of directly defining the entity's parent, or if you want to move the entity between different scenes"""
+		self.children.append(new_entity)
+		new_entity._parent = self
+
+	def clear_points(self):
+		"""Remove all `Point` objects"""
+		for point in filter(lambda x: isinstance(x, Point), self.children[:]):
+			point.parent = None
+
 	def get_separator(self, use_separator=None, used_lines=None):
 		"""Create a use_separator to put above display so that you can only see one rendered scene at a time"""
 		if use_separator is None:
@@ -275,11 +352,6 @@ class Scene:
 			stage.insert( 0, [' '] + [ str(starting_coords[0]+i)[-1:] for i in range(len(stage[0])-1) ] )
 		return "\n".join(["".join(row) for row in stage])+"\n"
 
-	def add_to_scene(self, new_entity: Entity):
-		"""Add an entity to the scene. This can be used instead of directly defining the entity's parent, or if you want to move the entity between different scenes"""
-		self.children.append(new_entity)
-		new_entity._parent = self
-
 	def render(self, is_display=True, layers: list=None, run_functions=True, *, _output=True, show_coord_numbers=False, use_separator=None):
 		"""This will print out all the entities that are part of the scene with their current settings. The character `¶` can be used as a whitespace in Sprites, as regular ` ` characters are considered transparent, unless the transparent parameter is disabled, in which case all whitespaces are rendered over the background.
 
@@ -292,10 +364,6 @@ class Scene:
 		For debugging, you can set `show_coord_numbers=True` to more see coordinate numbers around the border of your rendered scene. These numbers will not show in the render function's raw output regardless
 		"""
 
-		if run_functions:
-			for function in self.render_functions:
-				function()
-
 		stage = [[self.background_tile] * self.size[0] for _ in range(self.size[1])] # Create the render 'stage'
 		entity_list = list(filter(lambda x: x.layer in layers, self.children)) if layers and layers != [-1] else self.children # Get a list of the entities the user wants to render
 		for entity in sorted(entity_list, key=lambda x: x.layer, reverse=True):
@@ -306,7 +374,12 @@ class Scene:
 				).replace(self._void_char,' ')
 				stage[position[1]][position[0]] = f"{entity.colour}{pixel}{txtcolours.END if entity.colour else ''}"
 
+		if run_functions:
+			for function in self.render_functions:
+				function()
+
 		if is_display:
+			self.clear_points()
 			print(
 				self.get_separator(use_separator) +
 				self._render_stage(stage, show_coord_numbers)
