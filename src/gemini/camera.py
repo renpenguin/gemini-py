@@ -50,7 +50,6 @@ class Camera:
 		separator = self.scene.get_separator(use_separator, len(stage))
 
 		if is_display:
-			print(top_left)
 			print(separator+self.scene._render_stage(stage, show_coord_numbers, top_left))
 		if _output:
 			return stage
