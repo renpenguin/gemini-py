@@ -34,7 +34,7 @@ class Camera:
 		pos = f"focus_object={self.focus_object}" if self.focus_object else f"pos={self.pos}"
 		return f"Camera({pos}, size={self.size})"
 
-	def render(self, is_display=True, *args, _output=True, show_coord_numbers=False, use_separator=None, **kwargs):
+	def render(self, is_display=True, *args, _output=True, show_coord_numbers=False, use_rewrite=True, **kwargs):
 		"""Render a scene through a camera. All `Scene.render` parameters can be used"""
 
 		image = self.scene.render(False, *args, **kwargs)
@@ -47,9 +47,7 @@ class Camera:
 			l[max(top_left[0],0):bot_right[0]] for l in cut_vertical
 		]
 
-		separator = self.scene.get_separator(use_separator, len(stage))
-
 		if is_display:
-			print(separator+self.scene._render_stage(stage, show_coord_numbers, top_left))
+			print(self.scene._render_stage(stage, show_coord_numbers, use_rewrite, top_left))
 		if _output:
 			return stage

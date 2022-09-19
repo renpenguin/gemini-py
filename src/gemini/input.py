@@ -32,7 +32,7 @@ class Input:
 		self.pressed_key = self.get_key_press(False)
 
 	def string_key(self, c: str | None) -> str:
-		key = repr(c)[1:-1] if c else None
+		key = repr(c)[1:-1].lower() if c else None
 		if key == "\\x1b" and self.get_key_press() == "[":
 			key = f"{self._arrow_keys[self.get_key_press()]}_arrow"
 		return key
