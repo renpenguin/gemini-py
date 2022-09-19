@@ -1,4 +1,4 @@
-import sys, time, enum
+import sys, time, enum, math
 
 class MorphDict:
 	"""## MorphDict
@@ -149,6 +149,28 @@ class Vec2D:
 	def normalised(self):
 		return Vec2D([i/abs(i) for i in self])
 
+def hsv_to_rgb(h,s,v):
+	"""converts hsv to rgb, uses 0-255 range all around"""
+	h /= 255
+	s /= 255
+	v /= 255
+	i = math.floor(h*6)
+	f = h*6 - i
+	p = v * (1-s)
+	q = v * (1-f*s)
+	t = v * (1-(1-f)*s)
+
+	r, g, b = [
+		(v, t, p),
+		(q, v, p),
+		(p, v, t),
+		(p, q, v),
+		(t, p, v),
+		(v, p, q),
+	][int(i%6)]
+
+	return r*255, g*255, b*255
+
 class txtcolours:
 	"""txtcolours can be used to set an entity's colour, like so:
 	>>> from gemini import Scene, Entity, txtcolours as tc
@@ -161,6 +183,10 @@ class txtcolours:
 
 	def txt_mod(num):
 		return f'\x1b[{num}m'
+	def custom_fore(r:int,g:int,b:int):
+		return f'\x1b[38;2;{int(r)};{int(g)};{int(b)}m'
+	def custom_back(r:int,g:int,b:int):
+		return f'\x1b[48;2;{int(r)};{int(g)};{int(b)}m'
 
 	END = txt_mod(0)
 	BOLD = txt_mod(1)

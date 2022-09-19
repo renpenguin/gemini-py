@@ -6,7 +6,44 @@ from . import utils
 
 # -- Entities --
 
-class Entity:
+class RawEntity:
+	"""## RawEntity
+	Barebones entity object for custom objects. no collisions, no `move()`, no size, just the barebones"""
+
+	@property
+	def parent(self):
+		return self._parent
+	@parent.setter
+	def parent(self, value: 'Scene'):
+		if (self._parent != value or value is None) and self._parent:
+			self._parent.children.remove(self)
+		if value != None:
+			value.add_to_scene(self)
+
+	@property
+	def pos(self):
+		return Vec2D(self._pos)
+	@pos.setter
+	def pos(self, value: Vec2D):
+		self._pos = Vec2D(value) % self.parent.size if self.parent else Vec2D(value)
+	@property
+	def all_positions(self):
+		return []
+
+	def __init__(self, pos: Vec2D, parent: 'Scene', layer, colour, visible):
+		self._parent: 'Scene' = None
+		if parent := parent or main_scene.main_scene:
+			self.parent = parent
+
+		self.pos = pos
+		self.visible = visible
+		self.layer, self.colour = layer, colour
+
+	def get_pixel(self, pos: Vec2D) -> str:
+		"""All children of this class should have return a character using the get_pixel function"""
+		return "█"
+
+class Entity(RawEntity):
 	"""## Entity
 	The Entity is the most basic object in a Gemini Scene. It is simply a rectangle of your chosen proportions. You can create a new entity like so.
 
@@ -20,43 +57,20 @@ class Entity:
 	"""
 
 	@property
-	def parent(self):
-		return self._parent
-	@parent.setter
-	def parent(self, value: 'Scene'):
-		if (self._parent != value or value is None) and self._parent:
-			self._parent.children.remove(self)
-		if value != None:
-			value.add_to_scene(self)
-
-	@property
 	def fill_char(self):
-		return self._fill_char if self.visible else self.parent.background_tile
+		return self._fill_char
 	@fill_char.setter
 	def fill_char(self, value: str):
 		self._fill_char = value
-	@property
-	def pos(self):
-		return Vec2D(self._pos)
-	@pos.setter
-	def pos(self, value: Vec2D):
-		self._pos = Vec2D(value) % self.parent.size if self.parent else Vec2D(value)
-	@pos.deleter
-	def pos(self):
-		del self._pos
 	@property
 	def all_positions(self):
 		return [((self.pos + (i,j)) % self.parent.size) for i in range(self.size[0]) for j in range(self.size[1])]
 
 	def __init__(self, pos: Vec2D, size: Vec2D, parent: 'Scene'=None, auto_render:bool=False, layer: int=0, fill_char:str="█", colour:str="", collisions: list[int]|bool=[], visible:bool=True, move_functions: list=[]):
-		self._parent: 'Scene' = None
-		if parent := parent or main_scene.main_scene:
-			self.parent = parent
+		super().__init__(pos, parent, layer, colour, visible)
 
-		self._pos = Vec2D(0,0)
-		self.pos, self.size, self.fill_char = pos, Vec2D(size), fill_char
-		self.colour, self.layer = colour, layer
-		self.auto_render, self.visible = auto_render, visible
+		self.size, self.fill_char = Vec2D(size), fill_char
+		self.auto_render= auto_render
 		self.collisions: list = [-1] if collisions == True else [] if collisions == False else collisions
 		self.move_functions: list[function] = move_functions
 
@@ -78,11 +92,6 @@ class Entity:
 			if collide is None:
 				collide = self.collisions
 			if collide:
-				prev_visible = self.visible
-				self.visible = False
-
-				bake = self.parent.render(False, self.collisions, False)
-
 				def step_collide(axis: utils.Axis, p):
 					if p == 0:
 						return
@@ -91,7 +100,7 @@ class Entity:
 					for j in range(colliding):
 						for wall_p in range(self.size[0 if axis is utils.Axis.Y else 1]):
 							next_pos = axis.vector( (self.size[axis.value] if p > 0 else -1) + j * polarity, wall_p )
-							if self.parent.is_entity_at(self.pos + next_pos, self.collisions, bake):
+							if self.parent.is_entity_at(self.pos + next_pos, self.collisions):
 								nonlocal has_collided
 								colliding, has_collided = j, True
 
@@ -101,8 +110,6 @@ class Entity:
 
 				step_collide(utils.Axis.X, move.x)
 				step_collide(utils.Axis.Y, move.y)
-
-				self.visible = prev_visible
 			else:
 				self.pos += move
 
@@ -115,7 +122,7 @@ class Entity:
 
 		return 1 if has_collided else 0
 
-	def get_pixel(self, pos: Vec2D) -> str:
+	def get_pixel(self, _):
 		return self.fill_char
 
 class Point(Entity):
@@ -126,15 +133,15 @@ class Point(Entity):
 	def all_positions(self):
 		return [self.pos]
 
-	def __init__(self, pos: Vec2D, fill_char: str = "█", parent: 'Scene' = None, layer: int = 0, colour: str = "",visible: bool = True,):
-		super().__init__(pos, (1,1), parent, False, layer, fill_char, colour, [], visible, [])
+	def __init__(self, pos: Vec2D, parent: 'Scene' = None, auto_render: bool = False, layer: int = 0, fill_char: str = "█", colour: str = "", collisions: list[int] | bool = [], visible: bool = True, move_functions: list = []):
+		super().__init__(pos, (1,1), parent, auto_render, layer, fill_char, colour, collisions, visible, move_functions)
 
 	def __str__(self):
 		return f"Point(pos={self.pos},fill_char='{self._fill_char}')"
 
-class Line(Entity):
+class Line(RawEntity):
 	"""## Line
-	An object to handle automatic generation of lines. Accepts a `pos1` and a `pos2` variable. Inherits from `BaseEntity`. Lines are generated using Bresenham's line algorithm
+	An object to handle automatic generation of lines. Accepts a `pos1` and a `pos2` variable. Inherits from `RawEntity`. Lines are generated using Bresenham's line algorithm
 	"""
 
 	@property
@@ -142,14 +149,14 @@ class Line(Entity):
 		return Vec2D(self._pos0)
 	@pos0.setter
 	def pos0(self, value: Vec2D):
-		self._pos0 = Vec2D(value) % self.parent.size if self.parent else Vec2D(value)
+		self._pos0 = Vec2D(value)
 
 	@property
 	def pos1(self):
 		return Vec2D(self._pos1)
 	@pos1.setter
 	def pos1(self, value: Vec2D):
-		self._pos1 = Vec2D(value) % self.parent.size if self.parent else Vec2D(value)
+		self._pos1 = Vec2D(value)
 
 	@property
 	def all_positions(self):
@@ -163,7 +170,7 @@ class Line(Entity):
 		error = dx + dy
 
 		while True:
-			positions.append(Vec2D(x0, y0))
+			positions.append(Vec2D(x0, y0) % self.parent.size)
 			e2 = error * 2
 			if e2 >= dy:
 				if x0 == x1: break
@@ -177,12 +184,16 @@ class Line(Entity):
 		return positions
 
 	def __init__(self, pos0: Vec2D, pos1: Vec2D, parent: 'Scene' = None, layer: int = 0, fill_char: str = "█", colour: str = "", visible: bool = True):
-		super().__init__((0,0), (0,0), parent, False, layer, fill_char, colour, [], visible, None)
+		super().__init__(pos0, parent, layer, colour, visible)
+		self.fill_char = fill_char
 		self.pos0 = pos0
 		self.pos1 = pos1
 
 	def __str__(self):
 		return f"Line(pos0={self.pos0},pos1={self.pos1},fill_char='{self._fill_char}')"
+
+	def get_pixel(self, _):
+		return self.fill_char
 
 class Sprite(Entity):
 	"""## Sprite
@@ -203,7 +214,7 @@ class Sprite(Entity):
 	@property
 	def image(self):
 		"""This will return nothing if the sprite is hidden, to always get the raw image"""
-		return self._image if self.visible else " \n"*self.size[1]
+		return self._image
 	@image.setter
 	def image(self, value: str):
 		self._image = value
@@ -294,7 +305,7 @@ class Scene:
 	>>> set_main_scene(new_scene)
 
 	The `render_functions` parameter is to be a list of functions to run before any render, except when the `run_functions` parameter is set to False"""
-	use_separator = True
+
 	_void_char = '¶'
 
 	@property
@@ -309,12 +320,12 @@ class Scene:
 		"""Return the background character with colours included"""
 		return f"{self.bg_colour}{self.clear_char}{txtcolours.END if self.bg_colour != '' else ''}"
 
-	def __init__(self, size: Vec2D, clear_char="░", bg_colour="", children: list[Entity]=[], render_functions: list=[], is_main_scene=False):
+	def __init__(self, size: Vec2D, clear_char="░", bg_colour="", children: list[RawEntity]=[], render_functions: list=None, is_main_scene=False):
 		self.size = Vec2D(size)
 		self.clear_char = clear_char
 		self.bg_colour = bg_colour
-		self.children: list[Entity] = []
-		self.render_functions: list[function] = render_functions
+		self.children: list[RawEntity] = []
+		self.render_functions: list[function] = render_functions if render_functions != None else [self.clear_points]
 
 		if is_main_scene:
 			self.is_main_scene = True
@@ -325,7 +336,7 @@ class Scene:
 	def __str__(self):
 		return f"Scene(size={self.size},clear_char='{self.clear_char}',is_main_scene={self.is_main_scene})"
 
-	def add_to_scene(self, new_entity: Entity):
+	def add_to_scene(self, new_entity: RawEntity):
 		"""Add an entity to the scene. This can be used instead of directly defining the entity's parent, or if you want to move the entity between different scenes"""
 		self.children.append(new_entity)
 		new_entity._parent = self
@@ -335,24 +346,24 @@ class Scene:
 		for point in filter(lambda x: isinstance(x, Point), self.children[:]):
 			point.parent = None
 
-	def get_separator(self, use_separator=None, used_lines=None):
-		"""Create a use_separator to put above display so that you can only see one rendered scene at a time"""
-		if use_separator is None:
-			use_separator = self.use_separator
+	def get_separator(self, used_lines=None):
+		"""Create a separator to put above display so that you can only see one rendered scene at a time [[DEPRECATED]]"""
 
-		seperator = "\n" * (os.get_terminal_size().lines - (used_lines or self.size[1]))
+		return "\n" * (os.get_terminal_size().lines - (used_lines or self.size[1]))
 
-		return seperator if use_separator else ""
-
-	def _render_stage(self, stage: list[list], show_coord_numbers=False, starting_coords=(0,0)):
+	def _render_stage(self, stage: list[list], show_coord_numbers=False, use_rewrite=True, starting_coords=(0,0)):
 		"""Return a baked scene, ready for printing. This will take your grid of strings and render it. You can also set `show_coord_numbers=True` to print your scene with coordinate numbers for debugging purposes"""
+
 		if show_coord_numbers:
 			for i, c in enumerate(stage, starting_coords[1]):
 				c.insert(0, str(i)[-1:])
 			stage.insert( 0, [' '] + [ str(starting_coords[0]+i)[-1:] for i in range(len(stage[0])-1) ] )
-		return "\n".join(["".join(row) for row in stage])+"\n"
 
-	def render(self, is_display=True, layers: list=None, run_functions=True, *, _output=True, show_coord_numbers=False, use_separator=None):
+		rows = ["".join(row) for row in stage]
+		visible_lines = 0 if os.get_terminal_size().lines > self.size.y else self.size.y - os.get_terminal_size().lines + 2
+		return ("\x1b[H\x1b[J" if use_rewrite else "") + "\n".join(rows[visible_lines:]) + "\n"
+
+	def render(self, is_display=True, layers: list=None, run_functions=True, *, _output=True, show_coord_numbers=False, use_rewrite=True):
 		"""This will print out all the entities that are part of the scene with their current settings. The character `¶` can be used as a whitespace in Sprites, as regular ` ` characters are considered transparent, unless the transparent parameter is disabled, in which case all whitespaces are rendered over the background.
 
 		When rendering an animation, make sure to put a short pause in between frames to set your fps. `gemini.sleep(0.1)` will mean a new fram every 0.1 seconds, aka 10 FPS
@@ -362,16 +373,19 @@ class Scene:
 		If the `layers` parameter is set, only entities on those layers will be rendered. Entities will also be rendered in the order of layers, with the smallest layer first
 
 		For debugging, you can set `show_coord_numbers=True` to more see coordinate numbers around the border of your rendered scene. These numbers will not show in the render function's raw output regardless
+
+		`reprint_render` determines if the render will replace the old render or simply print after it. The latter will allow you to scroll up and see your screen history
 		"""
 
 		stage = [[self.background_tile] * self.size[0] for _ in range(self.size[1])] # Create the render 'stage'
 		entity_list = list(filter(lambda x: x.layer in layers, self.children)) if layers and layers != [-1] else self.children # Get a list of the entities the user wants to render
+		entity_list = list(filter(lambda x: x.visible, entity_list))
 		for entity in sorted(entity_list, key=lambda x: x.layer, reverse=True):
 			# Add each pixel of an entity to the stage
 			for position in entity.all_positions:
 				pixel = entity.get_pixel(
 					(position - entity.pos) % self.size
-				).replace(self._void_char,' ')
+				)[0].replace(self._void_char,' ')
 				stage[position[1]][position[0]] = f"{entity.colour}{pixel}{txtcolours.END if entity.colour else ''}"
 
 		if run_functions:
@@ -379,21 +393,13 @@ class Scene:
 				function()
 
 		if is_display:
-			self.clear_points()
-			print(
-				self.get_separator(use_separator) +
-				self._render_stage(stage, show_coord_numbers)
-			)
+			print(self._render_stage(stage, show_coord_numbers, use_rewrite))
 		if _output:
 			return stage
 
-	def is_entity_at(self, pos: Vec2D, layers: list=[-1], bake=None):
-		"""Check for any object at a specific position, can be sorted by layers. `-1` in the layers list means to collide with all layers"""
-		layers = layers if isinstance(layers, list) else [layers]
-		render = bake or self.render(is_display=False, layers=None if -1 in layers else layers, run_functions=False)
-		pos = Vec2D(pos) % self.size
-		coordinate = render[pos[1]][pos[0]]
-		return coordinate != self.background_tile
+	def is_entity_at(self, pos: Vec2D, layers: list=[-1], exclude:list[RawEntity]=[]):
+		"""Check for any object at a specific position, can be sorted by layers. `-1` in the layers list means to collide with all layers. entities in the `exclude` list parameter will be ignored"""
+		return len(list(filter(lambda x: x not in exclude, self.get_entities_at(pos, layers)))) > 0
 
 	def get_entities_at(self, pos: Vec2D, layers: list[int]=[]) -> list[Entity]:
 		"""Return all entities found at the chosen position, can be filtered by layer"""
@@ -402,3 +408,6 @@ class Scene:
 		entities: list[Entity] = list(filter(lambda x: x.layer in layers, self.children)) if layers else self.children
 
 		return list(filter(lambda x: pos in x.all_positions, entities))
+
+# prepares for the first render
+print("\n" * (os.get_terminal_size().lines))
