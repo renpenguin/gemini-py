@@ -128,10 +128,10 @@ class Vec2D:
 			raise IndexError("Vec2D has no elements outside of x and y")
 		return self.__repr__()[i]
 	def __add__(self, value: 'Vec2D'):
-		return Vec2D(list(map(int.__add__, self, value)))
+		return Vec2D(self[0]+value[0], self[1]+value[1])
 	__radd__ = __add__
 	def __sub__(self, value: 'Vec2D'):
-		return Vec2D(list(map(int.__sub__, self, value)))
+		return Vec2D(self[0]-value[0], self[1]-value[1])
 	__rsub__ = __sub__
 	def __mul__(self, value: int):
 		return Vec2D(self.x*value,self.y*value)
@@ -148,6 +148,15 @@ class Vec2D:
 
 	def normalised(self):
 		return Vec2D([i/abs(i) for i in self])
+
+def ccw(A,B,C):
+    return (C.y-A.y) * (B.x-A.x) > (B.y-A.y) * (C.x-A.x)
+def intersect(A,B,C,D):
+	"""Return true if line segments AB and CD intersect"""
+	return ccw(A,C,D) != ccw(B,C,D) and ccw(A,B,C) != ccw(A,B,D)
+
+def is_clockwise(points: list[Vec2D]):
+	return sum((p1.x-p2.x)*(p1.y+p2.y) for p1, p2 in zip(points, points[-1:]+points[:-1])) < 0
 
 def hsv_to_rgb(h,s,v):
 	"""converts hsv to rgb, uses 0-255 range all around"""
