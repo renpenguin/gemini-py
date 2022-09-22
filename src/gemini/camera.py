@@ -48,6 +48,6 @@ class Camera:
 		]
 
 		if is_display:
-			print(self.scene._render_stage(stage, show_coord_numbers, use_rewrite, use_clear, top_left))
+			print(self.scene._render_stage(stage, show_coord_numbers, use_rewrite, use_clear, starting_coords=(max(top_left[0],0), max(top_left[1],0))))
 		if _output:
 			return stage
