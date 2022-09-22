@@ -34,7 +34,7 @@ class Camera:
 		pos = f"focus_object={self.focus_object}" if self.focus_object else f"pos={self.pos}"
 		return f"Camera({pos}, size={self.size})"
 
-	def render(self, is_display=True, *args, _output=True, show_coord_numbers=False, use_rewrite=True, **kwargs):
+	def render(self, is_display=True, *args, _output=True, show_coord_numbers=False, use_rewrite=True, use_clear=False, **kwargs):
 		"""Render a scene through a camera. All `Scene.render` parameters can be used"""
 
 		image = self.scene.render(False, *args, **kwargs)
@@ -48,6 +48,6 @@ class Camera:
 		]
 
 		if is_display:
-			print(self.scene._render_stage(stage, show_coord_numbers, use_rewrite, top_left))
+			print(self.scene._render_stage(stage, show_coord_numbers, use_rewrite, use_clear, top_left))
 		if _output:
 			return stage
