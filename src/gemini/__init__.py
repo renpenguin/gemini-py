@@ -129,14 +129,14 @@ class Entity(RawEntity):
 
 class Point(Entity):
 	"""## Point
-	An Instance of `Entity` with size (1,1). Helpful for temporary points in renders, simply add `gemini.Point.clear_points(scene)` to `scene.render_functions` (`scene` being your Scene instance)"""
+	A child of `Entity` with size (1,1). Helpful for temporary points in renders, simply add `gemini.Point.clear_points(scene)` to `scene.render_functions` (`scene` being your Scene instance)"""
 
 	@property
 	def all_positions(self):
 		return [self.pos]
 
-	def __init__(self, pos: Vec2D, parent: 'Scene' = None, auto_render: bool = False, layer: int = 0, fill_char: str = "█", colour: str = "", collisions: list[int] | bool = [], visible: bool = True, move_functions: list = []):
-		super().__init__(pos, (1,1), parent, auto_render, layer, fill_char, colour, collisions, visible, move_functions)
+	def __init__(self, pos: Vec2D, *args, **kwargs):
+		super().__init__(pos, (1,1), *args, **kwargs)
 
 	def __str__(self):
 		return f"Point(pos={self.pos},fill_char='{self._fill_char}')"
