@@ -347,6 +347,19 @@ class Scene:
 	The `render_functions` parameter is to be a list of functions to run before any render, except when the `run_functions` parameter is set to False"""
 
 	_void_char = '¶'
+	debug_display = ""
+
+	@property
+	def origin(self):
+		"""Set where the centre of the screen should be. Can be a Vec2D or a string with one of the following options:
+		- "topleft"
+		- "centre"
+		"""
+		return Vec2D(eval(str(self._origin), {"topleft": (0,0), "centre": self.size/2}))
+
+	@origin.setter
+	def origin(self, value):
+		self._origin = value
 
 	@property
 	def is_main_scene(self):
@@ -360,12 +373,13 @@ class Scene:
 		"""Return the background character with colours included"""
 		return f"{self.bg_colour}{self.clear_char}{txtcolours.END if self.bg_colour != '' else ''}"
 
-	def __init__(self, size: Vec2D, clear_char="░", bg_colour="", children: list[RawEntity]=[], render_functions: list=None, is_main_scene=False):
+	def __init__(self, size: Vec2D, clear_char="░", bg_colour="", children: list[RawEntity]=[], render_functions: list=None, is_main_scene=False, origin="topleft"):
 		self.size = Vec2D(size)
 		self.clear_char = clear_char
 		self.bg_colour = bg_colour
 		self.children: list[RawEntity] = []
 		self.render_functions: list[function] = render_functions if render_functions != None else [self.clear_points]
+		self.origin = origin
 
 		if is_main_scene:
 			self.is_main_scene = True
@@ -424,11 +438,16 @@ class Scene:
 			# Add each pixel of an entity to the stage
 			end = txtcolours.END if entity.colour else ''
 			for position in entity.all_positions:
+				position += self.origin
 				position %= self.size
 				pixel = entity.get_pixel(
-					(position - entity.pos) % self.size
+					(position - entity.pos - self.origin) % self.size
 				)[0].replace(self._void_char,' ')
 				stage[position[1]][position[0]] = f"{entity.colour}{pixel}{end}"
+
+		for i, line in enumerate(self.debug_display.split("\n")):
+			for j in range(len(line)):
+				stage[i][j] = line[j]
 
 		if run_functions:
 			for function in self.render_functions:
