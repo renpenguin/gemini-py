@@ -145,9 +145,47 @@ class Vec2D:
 		)))
 	def __eq__(self, value: 'Vec2D') -> bool:
 		return self.__repr__() == Vec2D(value).__repr__()
+	def __gt__(self, value: 'Vec2D') -> bool:
+		return self.x > Vec2D(value).x or self.y > Vec2D(value).y
+	def __lt__(self, value: 'Vec2D') -> bool:
+		return self.x < Vec2D(value).x or self.y < Vec2D(value).y
+	def __ge__(self, value: 'Vec2D') -> bool:
+		return self.x >= Vec2D(value).x or self.y >= Vec2D(value).y
+	def __le__(self, value: 'Vec2D') -> bool:
+		return self.x <= Vec2D(value).x or self.y <= Vec2D(value).y
 
-	def normalised(self):
-		return Vec2D([i/abs(i) for i in self])
+class Vec2DFloat(Vec2D):
+	"""Helper class for positions and sizes. A set of two floats. Can be initalised with `Vec2DFloat(5.5,4.2)` or with `Vec2DFloat([5.5,4.2])` Can also just be a replacement for `tuple[float,float]`
+
+	Other examples:
+	>>> Vec2DFloat(5, 2) + Vec2DFloat(4, -1.5)
+	Vec2DFloat(9.0, 0.5)
+	>>> Vec2DFloat(10.3, 10) - Vec2DFloat(4.8,1)
+	Vec2DFloat(5.5, 9)"""
+
+	def __init__(self, x: list|float, y:float=None):
+		self.y = float(x[1] if isinstance(x, list|tuple|Vec2D) else y)
+		self.x = float(x[0] if isinstance(x, list|tuple|Vec2D) else x)
+
+	def to_int(self):
+		return Vec2D(self)
+
+	def __add__(self, value: 'Vec2DFloat'):
+		return Vec2DFloat(self[0]+value[0], self[1]+value[1])
+	__radd__ = __add__
+	def __sub__(self, value: 'Vec2DFloat'):
+		return Vec2DFloat(self[0]-value[0], self[1]-value[1])
+	__rsub__ = __sub__
+	def __mul__(self, value: float):
+		return Vec2DFloat(self.x*value,self.y*value)
+	__rmul__ = __mul__
+	def __truediv__(self, value: float):
+		return Vec2DFloat(self.x/value,self.y/value)
+	def __mod__(self, limits: 'Vec2DFloat'):
+		return Vec2DFloat(list(map(
+			lambda x, y: x%y if x >= 0 else (y + x)%y,
+			self, limits
+		)))
 
 def ccw(A,B,C):
     return (C.y-A.y) * (B.x-A.x) > (B.y-A.y) * (C.x-A.x)

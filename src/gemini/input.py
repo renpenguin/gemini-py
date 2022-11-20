@@ -20,7 +20,7 @@ class Input:
 
 	and the Entity will move in your chosen direction!
 	"""
-	_arrow_keys = {"A": "up","B": "down","C": "right","D": "left"}
+	_arrow_keys = {"a": "up","b": "down","c": "right","d": "left"}
 	direction_keys = MorphDict(
 		(["w","up_arrow"],Vec2D(0,-1)),
 		(["s","down_arrow"],Vec2D(0,1)),

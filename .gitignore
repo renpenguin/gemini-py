@@ -1,6 +1,5 @@
 */__pycache__/*
 *.py[cod]
-Gemini.code-workspace
 dist/*
 src/gemini_engine.egg-info/*
 *.DS_Store
