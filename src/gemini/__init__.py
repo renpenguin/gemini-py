@@ -94,15 +94,18 @@ class Entity(RawEntity):
 			if collide is None:
 				collide = self.collisions
 			if collide:
+				positions = self.all_positions
 				def step_collide(axis: utils.Axis, p):
 					if p == 0:
 						return
 					colliding = abs(p)
 					polarity = (1 if p > 0 else -1)
 					for j in range(colliding):
-						for wall_p in range(self.size[0 if axis is utils.Axis.Y else 1]):
-							next_pos = axis.vector( (self.size[axis.value] if p > 0 else -1) + j * polarity, wall_p )
-							if self.parent.is_entity_at(self.pos + next_pos, self.collisions):
+						for pos in positions:
+							new_pos = pos + axis.vector((j+1)*polarity)
+							collisions = self.parent.get_entities_at(new_pos, collide)
+							collisions = list(filter(lambda x: self != x, collisions))
+							if collisions:
 								nonlocal has_collided
 								colliding, has_collided = j, True
 
@@ -328,6 +331,9 @@ class AnimatedSprite(Sprite):
 
 	def next_frame(self):
 		self.current_frame += 1
+
+	def prev_frame(self):
+		self.current_frame -= 1
 
 # -- Scene --
 
