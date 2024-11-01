@@ -1,9 +1,9 @@
 # Gemini Engine
 
 [![PyPI version](https://img.shields.io/pypi/v/gemini-engine?logo=pypi)](https://pypi.org/project/gemini-engine)
-![Stars](https://img.shields.io/github/stars/redpenguinyt/GeminiEngine?color=yellow) ![Last commit](https://img.shields.io/github/last-commit/redpenguinyt/geminiengine) ![Code size](https://img.shields.io/github/languages/code-size/redpenguinyt/GeminiEngine) [![Downloads](https://img.shields.io/pypi/dm/gemini-engine)](https://pypi.org/project/gemini-engine) [![Issues](https://img.shields.io/github/issues/redpenguinyt/geminiengine)](https://github.com/redpenguinyt/GeminiEngine/issues)
+![Stars](https://img.shields.io/github/stars/renpenguin/GeminiEngine?color=yellow) ![Last commit](https://img.shields.io/github/last-commit/renpenguin/geminiengine) ![Code size](https://img.shields.io/github/languages/code-size/renpenguin/GeminiEngine) [![Downloads](https://img.shields.io/pypi/dm/gemini-engine)](https://pypi.org/project/gemini-engine) [![Issues](https://img.shields.io/github/issues/renpenguin/geminiengine)](https://github.com/renpenguin/GeminiEngine/issues)
 
-Gemini Engine is a monospace 2D ASCII rendering engine. It includes collisions, layers, inputs and the ability to handle solid objects as well as ascii art. Examples can be found on the [GeminiExamples github](https://github.com/redpenguinyt/GeminiExamples)
+Gemini Engine is a monospace 2D ASCII rendering engine. It includes collisions, layers, inputs and the ability to handle solid objects as well as ascii art. Examples can be found on the [GeminiExamples github](https://github.com/renpenguin/GeminiExamples)
 
 WARNING: It’s important to use a monospace font in the terminal for the engine to render images properly
 
@@ -18,7 +18,7 @@ python3 -m pip install -U gemini-engine
 If you want to run the latest version of the code, you can install from github:
 
 ```
-python3 -m pip install -U git+https://github.com/redpenguinyt/GeminiEngine.git@latest
+python3 -m pip install -U git+https://github.com/renpenguin/GeminiEngine.git@latest
 ```
 
 Now that you have installed the library, instance a Scene and an Entity, then render the scene
